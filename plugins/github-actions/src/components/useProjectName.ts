@@ -23,9 +23,7 @@ export const useProjectName = (name: EntityCompoundName) => {
 
   const { value } = useAsync<string>(async () => {
     const entity = await catalogApi.getEntityByName(name);
-    return (
-      entity?.metadata.annotations?.['backstage.io/github-actions-id'] ?? ''
-    );
+    return entity?.metadata.annotations?.['github.io/project-slug'] ?? '';
   });
   return value;
 };
