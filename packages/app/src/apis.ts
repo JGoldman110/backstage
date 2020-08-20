@@ -29,6 +29,7 @@ import {
   OAuth2,
   OktaAuth,
   GitlabAuth,
+  Auth0Auth,
   oauthRequestApiRef,
   OAuthRequestManager,
   googleAuthApiRef,
@@ -36,6 +37,7 @@ import {
   oauth2ApiRef,
   oktaAuthApiRef,
   gitlabAuthApiRef,
+  auth0AuthApiRef,
   storageApiRef,
   WebStorage,
 } from '@backstage/core';
@@ -62,6 +64,9 @@ import {
   GithubActionsClient,
   githubActionsApiRef,
 } from '@backstage/plugin-github-actions';
+import { jenkinsApiRef, JenkinsApi } from '@backstage/plugin-jenkins';
+
+import { TravisCIApi, travisCIApiRef } from '@roadiehq/backstage-plugin-travis-ci';
 
 export const apis = (config: ConfigApi) => {
   // eslint-disable-next-line no-console
@@ -83,11 +88,15 @@ export const apis = (config: ConfigApi) => {
     new CircleCIApi(`${backendUrl}/proxy/circleci/api`),
   );
 
+  builder.add(jenkinsApiRef, new JenkinsApi(`${backendUrl}/proxy/jenkins/api`));
+
   builder.add(githubActionsApiRef, new GithubActionsClient());
 
   builder.add(featureFlagsApiRef, new FeatureFlags());
 
   builder.add(lighthouseApiRef, new LighthouseRestApi('http://localhost:3003'));
+
+  builder.add(travisCIApiRef, new TravisCIApi());
 
   const oauthRequestApi = builder.add(
     oauthRequestApiRef,
@@ -124,6 +133,15 @@ export const apis = (config: ConfigApi) => {
   builder.add(
     gitlabAuthApiRef,
     GitlabAuth.create({
+      apiOrigin: backendUrl,
+      basePath: '/auth/',
+      oauthRequestApi,
+    }),
+  );
+  
+  builder.add(
+    auth0AuthApiRef,
+    Auth0Auth.create({
       apiOrigin: backendUrl,
       basePath: '/auth/',
       oauthRequestApi,
