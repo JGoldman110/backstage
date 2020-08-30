@@ -25,7 +25,7 @@ export type OAuthProviderOptions = {
   /**
    * Client ID of the auth provider.
    */
-  clientID: string;
+  clientId: string;
   /**
    * Client Secret of the auth provider.
    */
@@ -33,58 +33,7 @@ export type OAuthProviderOptions = {
   /**
    * Callback URL to be passed to the auth provider to redirect to after the user signs in.
    */
-  callbackURL: string;
-};
-
-export type GenericOAuth2ProviderOptions = OAuthProviderOptions & {
-  authorizationURL: string;
-  tokenURL: string;
-};
-
-export type OAuthProviderConfig = {
-  /**
-   * Cookies can be marked with a secure flag to send cookies only when the request
-   * is over an encrypted channel (HTTPS).
-   *
-   * For development environment we don't mark the cookie as secure since we serve
-   * localhost over HTTP.
-   */
-  secure: boolean;
-  /**
-   * The protocol://domain[:port] where the app (frontend) is hosted. This is used to post messages back
-   * to the window that initiates an auth request.
-   */
-  appOrigin: string;
-  /**
-   * Client ID of the auth provider.
-   */
-  clientId: string;
-  /**
-   * Client Secret of the auth provider.
-   */
-  clientSecret: string;
-  /**
-   * The location of the OAuth Authorization Server
-   */
-  audience?: string;
-};
-
-export type GenericOAuth2ProviderConfig = OAuthProviderConfig & {
-  authorizationURL: string;
-  tokenURL: string;
-};
-
-export type EnvironmentProviderConfig = {
-  /**
-   * key, values are environment names and OAuthProviderConfigs
-   *
-   * For e.g
-   * {
-   *   development: DevelopmentOAuthProviderConfig
-   *   production: ProductionOAuthProviderConfig
-   * }
-   */
-  [key: string]: OAuthProviderConfig;
+  callbackUrl: string;
 };
 
 export type AuthProviderConfig = {
@@ -93,6 +42,11 @@ export type AuthProviderConfig = {
    * callbackURL to redirect to once the user signs in to the auth provider.
    */
   baseUrl: string;
+
+  /**
+   * The base URL of the app as provided by app.baseUrl
+   */
+  appUrl: string;
 };
 
 /**
@@ -259,6 +213,10 @@ export type OAuthProviderInfo = {
    * Scopes granted for the access token.
    */
   scope: string;
+  /**
+   * A refresh token issued for the signed in user
+   */
+  refreshToken?: string;
 };
 
 export type OAuthPrivateInfo = {
@@ -326,6 +284,10 @@ export type RefreshTokenResponse = {
    * An access token issued for the signed in user.
    */
   accessToken: string;
+  /**
+   * Optionally, the server can issue a new Refresh Token for the user
+   */
+  refreshToken?: string;
   params: any;
 };
 
