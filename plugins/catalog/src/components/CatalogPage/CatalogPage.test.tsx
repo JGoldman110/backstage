@@ -14,20 +14,21 @@
  * limitations under the License.
  */
 
+import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
 import {
   ApiProvider,
   ApiRegistry,
   IdentityApi,
   identityApiRef,
+  ProfileInfo,
   storageApiRef,
 } from '@backstage/core';
 import { MockStorageApi, wrapInTestApp } from '@backstage/test-utils';
 import { fireEvent, render } from '@testing-library/react';
 import React from 'react';
-import { catalogApiRef } from '../..';
-import { CatalogApi } from '../../api/types';
 import { EntityFilterGroupsProvider } from '../../filter';
+import { catalogApiRef } from '../../plugin';
 import { CatalogPage } from './CatalogPage';
 
 describe('CatalogPage', () => {
@@ -60,8 +61,12 @@ describe('CatalogPage', () => {
     getLocationByEntity: () =>
       Promise.resolve({ id: 'id', type: 'github', target: 'url' }),
   };
+  const testProfile: Partial<ProfileInfo> = {
+    displayName: 'Display Name',
+  };
   const indentityApi: Partial<IdentityApi> = {
     getUserId: () => 'tools@example.com',
+    getProfile: () => testProfile,
   };
 
   const renderWrapped = (children: React.ReactNode) =>

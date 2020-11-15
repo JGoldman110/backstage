@@ -15,17 +15,23 @@
  */
 
 import fs from 'fs-extra';
-import { resolve as resolvePath, relative as relativePath } from 'path';
+import {
+  join as joinPath,
+  resolve as resolvePath,
+  relative as relativePath,
+} from 'path';
+import { tmpdir } from 'os';
+import tar, { CreateOptions } from 'tar';
 import { paths } from '../paths';
 import { run } from '../run';
-import tar from 'tar';
-import { tmpdir } from 'os';
+import { ParallelOption } from '../parallel';
 
 type LernaPackage = {
   name: string;
   private: boolean;
   location: string;
   scripts: Record<string, string>;
+  get(key: string): any;
 };
 
 type FileEntry =
@@ -47,6 +53,22 @@ type Options = {
    * Defaults to ['yarn.lock', 'package.json'].
    */
   files?: FileEntry[];
+
+  /**
+   * If set to true, the target packages are built before they are packaged into the workspace.
+   */
+  buildDependencies?: boolean;
+
+  /**
+   * Enable (true/false) or control amount of (number) parallelism in some build steps.
+   */
+  parallel?: ParallelOption;
+
+  /**
+   * If set, creates a skeleton tarball that contains all package.json files
+   * with the same structure as the workspace dir.
+   */
+  skeleton?: 'skeleton.tar';
 };
 
 /**
@@ -67,6 +89,18 @@ export async function createDistWorkspace(
 
   const targets = await findTargetPackages(packageNames);
 
+  if (options.buildDependencies) {
+    const scopeArgs = targets.flatMap(target => ['--scope', target.name]);
+    const lernaArgs =
+      options.parallel && Number.isInteger(options.parallel)
+        ? ['--concurrency', options.parallel.toString()]
+        : [];
+
+    await run('yarn', ['lerna', ...lernaArgs, 'run', ...scopeArgs, 'build'], {
+      cwd: paths.targetRoot,
+    });
+  }
+
   await moveToDistWorkspace(targetDir, targets);
 
   const files: FileEntry[] = options.files ?? ['yarn.lock', 'package.json'];
@@ -76,6 +110,24 @@ export async function createDistWorkspace(
     const dest = typeof file === 'string' ? file : file.dest;
     await fs.copy(paths.resolveTargetRoot(src), resolvePath(targetDir, dest));
   }
+
+  if (options.skeleton) {
+    const skeletonFiles = targets.map(target => {
+      const dir = relativePath(paths.targetRoot, target.location);
+      return joinPath(dir, 'package.json');
+    });
+
+    await tar.create(
+      {
+        file: resolvePath(targetDir, options.skeleton),
+        cwd: targetDir,
+        portable: true,
+        noMtime: true,
+      } as CreateOptions & { noMtime: boolean },
+      skeletonFiles,
+    );
+  }
+
   return targetDir;
 }
 
@@ -107,6 +159,26 @@ async function moveToDistWorkspace(
         strip: 1,
       });
       await fs.remove(archivePath);
+
+      // We remove the dependencies from package.json of packages that are marked
+      // as bundled, so that yarn doesn't try to install them.
+      if (target.get('bundled')) {
+        const pkgJson = await fs.readJson(
+          resolvePath(absoluteOutputPath, 'package.json'),
+        );
+        delete pkgJson.dependencies;
+        delete pkgJson.devDependencies;
+        delete pkgJson.peerDependencies;
+        delete pkgJson.optionalDependencies;
+
+        await fs.writeJson(
+          resolvePath(absoluteOutputPath, 'package.json'),
+          pkgJson,
+          {
+            spaces: 2,
+          },
+        );
+      }
     }),
   );
 }

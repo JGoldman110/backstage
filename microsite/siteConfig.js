@@ -17,7 +17,7 @@ const siteConfig = {
   url: 'https://backstage.io', // Your website URL
   cname: 'backstage.io',
   baseUrl: '/', // Base URL for your project */
-  editUrl: 'https://github.com/spotify/backstage/tree/master/docs/',
+  editUrl: 'https://github.com/backstage/backstage/edit/master/docs/',
 
   // Used for publishing and more
   projectName: 'backstage',
@@ -25,18 +25,22 @@ const siteConfig = {
   fossWebsite: 'https://spotify.github.io/',
 
   // Google Analytics
-  gaTrackingId: 'UA-48912878-10',
+  gaTrackingId: 'UA-163836834-5',
 
   // For no header links in the top nav bar -> headerLinks: [],
   headerLinks: [
     {
-      href: 'https://github.com/spotify/backstage',
+      href: 'https://github.com/backstage/backstage',
       label: 'GitHub',
     },
     {
       doc: 'overview/what-is-backstage',
       href: '/docs',
       label: 'Docs',
+    },
+    {
+      page: 'plugins',
+      label: 'Plugins',
     },
     {
       page: 'blog',
@@ -56,15 +60,16 @@ const siteConfig = {
   /* path to images for header/footer */
   // headerIcon: "img/android-chrome-192x192.png",
   footerIcon: 'img/android-chrome-192x192.png',
-  favicon: 'img/favicon.svg',
+  favicon: 'img/favicon.ico',
 
   /* Colors for website */
   colors: {
     primaryColor: '#36BAA2',
     secondaryColor: '#121212',
     textColor: '#FFFFFF',
-    navigatorTitleTextColor: '#9e9e9e',
-    navigatorItemTextColor: '#616161',
+    navigatorTitleTextColor: '#e4e4e4',
+    navigatorItemTextColor: '#9e9e9e',
+    navGroupSubcategoryTitleColor: '#9e9e9e',
   },
 
   /* Colors for syntax highlighting */
@@ -73,7 +78,7 @@ const siteConfig = {
   },
 
   // This copyright info is used in /core/Footer.js and blog RSS/Atom feeds.
-  copyright: `Copyright © ${new Date().getFullYear()} Spotify AB`,
+  copyright: `Copyright © ${new Date().getFullYear()} Backstage Project Authors. All rights reserved. The Linux Foundation has registered trademarks and uses trademarks. For a list of trademarks of The Linux Foundation, please see our Trademark Usage page: https://www.linuxfoundation.org/trademark-usage`,
 
   highlight: {
     // Highlight.js theme to use for syntax highlighting in code blocks.
@@ -89,8 +94,10 @@ const siteConfig = {
   cleanUrl: true,
 
   // Open Graph and Twitter card images.
-  ogImage: 'img/logo-gradient-on-dark.svg',
-  twitterImage: 'img/logo-gradient-on-dark.svg',
+  ogImage:
+    'logo_assets/png/Backstage_Identity_Assets_Artwork_RGB_04_Icon_Teal.png',
+  twitterImage:
+    'logo_assets/png/Backstage_Identity_Assets_Artwork_RGB_04_Icon_Teal.png',
 
   // For sites with a sizable amount of content, set collapsible to true.
   // Expand/collapse the links and subcategories under categories.
@@ -104,7 +111,7 @@ const siteConfig = {
 
   // You may provide arbitrary config keys to be used as needed by your
   // template. For example, if you need your repo's URL...
-  repoUrl: 'https://github.com/spotify/backstage',
+  repoUrl: 'https://github.com/backstage/backstage',
   twitterUsername: 'SpotifyEng',
 
   stylesheets: [

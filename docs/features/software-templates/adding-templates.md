@@ -1,11 +1,12 @@
 ---
 id: adding-templates
 title: Adding your own Templates
+description: Documentation on Adding your own Templates
 ---
 
 Templates are stored in the **Service Catalog** under a kind `Template`. The
-minimum that the a template skeleton needs is a `template.yaml` but it would be
-good to also have some files in there that can be templated in.
+minimum that is needed to define a template is a `template.yaml` file, but it
+would be good to also have some files in there that can be templated in.
 
 A simple `template.yaml` definition might look something like this:
 
@@ -29,7 +30,7 @@ spec:
   templater: cookiecutter
   # what does this template create
   type: website
-  # if the template is not in the current directory where this definition is kept then specfiy
+  # if the template is not in the current directory where this definition is kept then specify
   path: './template'
   # the schema for the form which is displayed in the frontend.
   # should follow JSON schema for forms: https://jsonforms.io/
@@ -58,39 +59,55 @@ Currently the catalog supports loading definitions from GitHub + Local Files. To
 load from other places, not only will there need to be another preparer, but the
 support to load the location will also need to be added to the Catalog.
 
-For loading from a file the following command should work when the backend is
+You can add the template files to the catalog through
+[static location configuration](../software-catalog/configuration.md#static-location-configuration),
+for example:
+
+```yaml
+catalog:
+  locations:
+    - type: url
+      target: https://github.com/spotify/cookiecutter-golang/blob/master/template.yaml
+      rules:
+        - allow: [Template]
+```
+
+Templates can also be added by posting the to the catalog directly. Note that if
+you're doing this, you need to configure the catalog to allow template entities
+to be ingested from any source, for example:
+
+```yaml
+catalog:
+  rules:
+    - allow: [Component, API, Template]
+```
+
+For loading from a file, the following command should work when the backend is
 running:
 
 ```sh
 curl \
   --location \
-  --request POST 'localhost:7000/catalog/locations' \
+  --request POST 'localhost:7000/api/catalog/locations' \
   --header 'Content-Type: application/json' \
   --data-raw "{\"type\": \"file\", \"target\": \"${YOUR PATH HERE}/template.yaml\"}"
 ```
 
-If loading from a git location, you can run the following
+If loading from a Git location, you can run the following
 
 ```sh
 curl \
   --location \
-  --request POST 'localhost:7000/catalog/locations' \
+  --request POST 'localhost:7000/api/catalog/locations' \
   --header 'Content-Type: application/json' \
-  --data-raw "{\"type\": \"github\", \"target\": \"https://${YOUR GITHUB REPO}blob/master/${PATH TO FOLDER}/template.yaml\"}"
+  --data-raw "{\"type\": \"github\", \"target\": \"https://${GITHUB URL}/${YOUR GITHUB ORG/REPO}/blob/master/${PATH TO FOLDER}/template.yaml\"}"
 ```
 
-This should then have added the catalog, and also should now be listed under the
-create page at http://localhost:3000/create.
-
-Alternatively, if you want to get setup with some mock templates that are
-already provided for you, you can run the following to load those templates:
-
-```
-yarn lerna run mock-data
-```
+This should then have been added the catalog, and be listed under the create
+page at http://localhost:3000/create.
 
 The `type` field which is chosen in the request to add the `template.yaml` to
-the Service Catalog here, will be come the `PreparerKey` which will be used to
+the Service Catalog here, will become the `PreparerKey` which will be used to
 select the `Preparer` when creating a job.
 
 ### Adding form values in the Scaffolder Wizard

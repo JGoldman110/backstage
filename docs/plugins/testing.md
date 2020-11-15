@@ -1,6 +1,7 @@
 ---
 id: testing
 title: Testing with Jest
+description: Documentation on How to do unit testing with Jest
 ---
 
 Backstage uses [Jest](https://facebook.github.io/jest/) for all our unit testing
@@ -31,7 +32,7 @@ working on.
 
 ## Naming Test Files
 
-Tests should be name `[filename].test.js`.
+Tests should be named `[filename].test.js`.
 
 For example, the tests for **`Link.js`** exist in the file **`Link.test.js`**.
 
@@ -53,7 +54,7 @@ TODO.
 
 # Writing Unit Tests
 
-The following principles are good guides to determining if you are writing high
+The following principles are good guides for determining if you are writing high
 quality frontend unit tests.
 
 ## Bad Unit Test Principle
@@ -165,11 +166,11 @@ because it fulfills all the principles above:
 ✓ **Fulfills Input/Output Principle**: Verifies the output changes when the
 input changes
 
-✓ **Fufills Blackbox Principle**: Does not verify _how_ the `<Loading />`
+✓ **Fulfills Blackbox Principle**: Does not verify _how_ the `<Loading />`
 component is mounted, just that it is mounted in response to the input.
 
 ✓ **Fulfills Scalability Principle**: If we decide to refactor the entire way
-the loading indicator is displayed the test still works without touching it.
+the loading indicator has displayed the test still works without touching it.
 
 ✓ **Fulfills Broken Functionality Principle**: this test verifies the
 functionality (displaying an indicator) is working, rather than how it is
@@ -247,15 +248,15 @@ Testing an API involves verifying four things:
 
 ### Mocking API Calls
 
-[Mocking in jest](https://facebook.github.io/jest/docs/en/mock-functions.html)
+[Mocking in Jest](https://facebook.github.io/jest/docs/en/mock-functions.html)
 involves wrapping existing functions (like an API call function) with an
 alternative.
 
 For example:
 
-**./Api.js**
+**`./MyApi.js`**
 
-```
+```js
 export {
   fetchSomethingFromServer: () => {
     // Live production call to a URI. Must be avoided during testing!
@@ -264,9 +265,9 @@ export {
 };
 ```
 
-**./\_\_mocks\_\_/Api.js**
+**`./\_\_mocks\_\_/MyApi.js`**
 
-```
+```js
 export {
   fetchSomethingFromServer: () => {
     // Simulate a production call, but avoid jest and just use a promise
@@ -275,16 +276,16 @@ export {
 }
 ```
 
-**./Api.test.js**
+**`./MyApi.test.js`**
 
-```
+```js
 /* eslint-disable import/first */
 
 jest.mock('./MyApi'); // Instruct Jest to swap all future imports of './MyApi.js' to './__mocks__/MyApi.js'
 
 import MyApi from './MyApi'; // Will actually return the contents of the file in the __mocks__ folder now
 
-it ('loads data', (done) => {
+it('loads data', done => {
   MyApi.fetchSomethingFromServer().then(result => {
     expect(result).toBe('some result object simulating server data here');
     done();

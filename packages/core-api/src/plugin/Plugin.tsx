@@ -14,47 +14,8 @@
  * limitations under the License.
  */
 
-import { ComponentType } from 'react';
-import {
-  PluginOutput,
-  RoutePath,
-  RouteOptions,
-  FeatureFlagName,
-  BackstagePlugin,
-} from './types';
-import { validateBrowserCompat, validateFlagName } from '../app/FeatureFlags';
-import { RouteRef } from '../routing';
-
-export type PluginConfig = {
-  id: string;
-  register?(hooks: PluginHooks): void;
-};
-
-export type PluginHooks = {
-  router: RouterHooks;
-  featureFlags: FeatureFlagsHooks;
-};
-
-export type RouterHooks = {
-  addRoute(
-    target: RouteRef,
-    Component: ComponentType<any>,
-    options?: RouteOptions,
-  ): void;
-
-  /**
-   * @deprecated See the `addRoute` method
-   */
-  registerRoute(
-    path: RoutePath,
-    Component: ComponentType<any>,
-    options?: RouteOptions,
-  ): void;
-};
-
-export type FeatureFlagsHooks = {
-  register(name: FeatureFlagName): void;
-};
+import { PluginConfig, PluginOutput, BackstagePlugin } from './types';
+import { AnyApiFactory } from '../apis';
 
 export class PluginImpl {
   private storedOutput?: PluginOutput[];
@@ -63,6 +24,10 @@ export class PluginImpl {
 
   getId(): string {
     return this.config.id;
+  }
+
+  getApis(): Iterable<AnyApiFactory> {
+    return this.config.apis ?? [];
   }
 
   output(): PluginOutput[] {
@@ -91,8 +56,6 @@ export class PluginImpl {
       },
       featureFlags: {
         register(name) {
-          validateBrowserCompat();
-          validateFlagName(name);
           outputs.push({ type: 'feature-flag', name });
         },
       },

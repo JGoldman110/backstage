@@ -23,6 +23,11 @@ export const techdocsStorageApiRef = createApiRef<TechDocsStorageApi>({
   description: 'Used to make requests towards the techdocs storage',
 });
 
+export const techdocsApiRef = createApiRef<TechDocsApi>({
+  id: 'plugin.techdocs.service',
+  description: 'Used to make requests towards techdocs API',
+});
+
 export interface TechDocsStorage {
   getEntityDocs(entityId: ParsedEntityId, path: string): Promise<string>;
   getBaseUrl(
@@ -30,6 +35,29 @@ export interface TechDocsStorage {
     entityId: ParsedEntityId,
     path: string,
   ): string;
+}
+
+export interface TechDocs {
+  getMetadata(metadataType: string, entityId: ParsedEntityId): Promise<string>;
+}
+
+export class TechDocsApi implements TechDocs {
+  public apiOrigin: string;
+
+  constructor({ apiOrigin }: { apiOrigin: string }) {
+    this.apiOrigin = apiOrigin;
+  }
+
+  async getMetadata(metadataType: string, entityId: ParsedEntityId) {
+    const { kind, namespace, name } = entityId;
+
+    const requestUrl = `${this.apiOrigin}/metadata/${metadataType}/${namespace}/${kind}/${name}`;
+
+    const request = await fetch(`${requestUrl}`);
+    const res = await request.json();
+
+    return res;
+  }
 }
 
 export class TechDocsStorageApi implements TechDocsStorage {
@@ -42,7 +70,7 @@ export class TechDocsStorageApi implements TechDocsStorage {
   async getEntityDocs(entityId: ParsedEntityId, path: string) {
     const { kind, namespace, name } = entityId;
 
-    const url = `${this.apiOrigin}/${kind}/${namespace ? namespace : 'default'}/${name}/${path}`;
+    const url = `${this.apiOrigin}/docs/${namespace}/${kind}/${name}/${path}`;
 
     const request = await fetch(
       `${url.endsWith('/') ? url : `${url}/`}index.html`,
@@ -64,7 +92,7 @@ export class TechDocsStorageApi implements TechDocsStorage {
 
     return new URL(
       oldBaseUrl,
-      `${this.apiOrigin}/${kind}/${namespace ? namespace : 'default'}/${name}/${path}`,
+      `${this.apiOrigin}/docs/${namespace}/${kind}/${name}/${path}`,
     ).toString();
   }
 }

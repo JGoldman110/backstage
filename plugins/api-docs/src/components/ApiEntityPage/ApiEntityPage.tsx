@@ -14,27 +14,25 @@
  * limitations under the License.
  */
 
-import { ApiEntityV1alpha1, Entity } from '@backstage/catalog-model';
+import { ApiEntity, Entity } from '@backstage/catalog-model';
 import {
   Content,
   errorApiRef,
   Header,
   Page,
-  pageTheme,
-  PageTheme,
   Progress,
   useApi,
 } from '@backstage/core';
-// TODO: Circular ref
 import { catalogApiRef } from '@backstage/plugin-catalog';
 import { Box } from '@material-ui/core';
 import { Alert } from '@material-ui/lab';
-import React, { FC, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useAsync } from 'react-use';
-import { ApiDefinitionCard } from '../ApiDefinitionCard/ApiDefinitionCard';
+import { ApiDefinitionCard } from '../ApiDefinitionCard';
 
 const REDIRECT_DELAY = 1000;
+
 function headerProps(
   kind: string,
   namespace: string | undefined,
@@ -54,20 +52,18 @@ function headerProps(
   };
 }
 
-export const getPageTheme = (entity?: Entity): PageTheme => {
-  const themeKey = entity?.spec?.type?.toString() ?? 'home';
-  return pageTheme[themeKey] ?? pageTheme.home;
+type EntityPageTitleProps = {
+  title: string;
+  entity: Entity | undefined;
 };
 
-const EntityPageTitle: FC<{ title: string; entity: Entity | undefined }> = ({
-  title,
-}) => (
+const EntityPageTitle = ({ title }: EntityPageTitleProps) => (
   <Box display="inline-flex" alignItems="center" height="1em">
     {title}
   </Box>
 );
 
-export const ApiEntityPage: FC<{}> = () => {
+export const ApiEntityPage = () => {
   const { optionalNamespaceAndName } = useParams() as {
     optionalNamespaceAndName: string;
   };
@@ -104,7 +100,7 @@ export const ApiEntityPage: FC<{}> = () => {
   );
 
   return (
-    <Page theme={getPageTheme(entity)}>
+    <Page themeId={entity?.spec?.type?.toString() ?? 'home'}>
       <Header
         title={<EntityPageTitle title={headerTitle} entity={entity} />}
         pageTitleOverride={headerTitle}
@@ -122,7 +118,7 @@ export const ApiEntityPage: FC<{}> = () => {
       {entity && (
         <>
           <Content>
-            <ApiDefinitionCard apiEntity={entity as ApiEntityV1alpha1} />
+            <ApiDefinitionCard apiEntity={entity as ApiEntity} />
           </Content>
         </>
       )}

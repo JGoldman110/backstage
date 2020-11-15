@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import React, { useState, useMemo, FC, ReactNode } from 'react';
 import { useLocalStorage, useAsync } from 'react-use';
 import { useNavigate } from 'react-router-dom';
@@ -28,7 +27,6 @@ import {
   ContentHeader,
   HeaderLabel,
   Progress,
-  pageTheme,
   useApi,
 } from '@backstage/core';
 
@@ -37,6 +35,7 @@ import { useQuery } from '../../utils';
 import LighthouseSupportButton from '../SupportButton';
 import LighthouseIntro, { LIGHTHOUSE_INTRO_LOCAL_STORAGE } from '../Intro';
 import AuditListTable from './AuditListTable';
+import { createAuditRouteRef } from '../../plugin';
 
 export const LIMIT = 10;
 
@@ -77,7 +76,7 @@ const AuditList: FC<{}> = () => {
             page={page}
             count={pageCount}
             onChange={(_event: Event, newPage: number) => {
-              navigate(`/lighthouse?page=${newPage}`);
+              navigate(`?page=${newPage}`);
             }}
           />
         )}
@@ -94,7 +93,7 @@ const AuditList: FC<{}> = () => {
   }
 
   return (
-    <Page theme={pageTheme.tool}>
+    <Page themeId="tool">
       <Header
         title="Lighthouse"
         subtitle="Website audits powered by Lighthouse"
@@ -111,7 +110,7 @@ const AuditList: FC<{}> = () => {
           <Button
             variant="contained"
             color="primary"
-            href="/lighthouse/create-audit"
+            onClick={() => navigate(createAuditRouteRef.path)}
           >
             Create Audit
           </Button>
@@ -119,7 +118,7 @@ const AuditList: FC<{}> = () => {
         </ContentHeader>
         <Grid container spacing={3} direction="column">
           <Grid item>
-            <InfoCard>{content}</InfoCard>
+            <InfoCard noPadding>{content}</InfoCard>
           </Grid>
         </Grid>
       </Content>

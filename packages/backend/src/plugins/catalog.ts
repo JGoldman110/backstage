@@ -14,44 +14,31 @@
  * limitations under the License.
  */
 
+import { useHotCleanup } from '@backstage/backend-common';
 import {
+  CatalogBuilder,
   createRouter,
-  DatabaseEntitiesCatalog,
-  DatabaseLocationsCatalog,
-  DatabaseManager,
-  HigherOrderOperations,
-  LocationReaders,
   runPeriodically,
 } from '@backstage/plugin-catalog-backend';
 import { PluginEnvironment } from '../types';
-import { useHotCleanup } from '@backstage/backend-common';
 
-export default async function createPlugin({
-  logger,
-  database,
-  config,
-}: PluginEnvironment) {
-  const locationReader = new LocationReaders({ logger, config });
-
-  const db = await DatabaseManager.createDatabase(database, { logger });
-  const entitiesCatalog = new DatabaseEntitiesCatalog(db);
-  const locationsCatalog = new DatabaseLocationsCatalog(db);
-  const higherOrderOperation = new HigherOrderOperations(
+export default async function createPlugin(env: PluginEnvironment) {
+  const builder = new CatalogBuilder(env);
+  const {
     entitiesCatalog,
     locationsCatalog,
-    locationReader,
-    logger,
-  );
+    higherOrderOperation,
+  } = await builder.build();
 
   useHotCleanup(
     module,
-    runPeriodically(() => higherOrderOperation.refreshAllLocations(), 10000),
+    runPeriodically(() => higherOrderOperation.refreshAllLocations(), 100000),
   );
 
   return await createRouter({
     entitiesCatalog,
     locationsCatalog,
     higherOrderOperation,
-    logger,
+    logger: env.logger,
   });
 }

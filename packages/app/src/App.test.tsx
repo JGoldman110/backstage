@@ -27,8 +27,11 @@ describe('App', () => {
           data: {
             app: { title: 'Test' },
             backend: { baseUrl: 'http://localhost:7000' },
+            lighthouse: {
+              baseUrl: 'http://localhost:3003',
+            },
             techdocs: {
-              storageUrl: 'http://localhost:7000/techdocs/static/docs',
+              storageUrl: 'http://localhost:7000/api/techdocs/static/docs',
             },
           },
           context: 'test',

@@ -18,3 +18,16 @@ import * as results from './results';
 
 export { results };
 export * from './types';
+
+export { parseEntityYaml } from './util/parse';
+
+export { AnnotateLocationEntityProcessor } from './AnnotateLocationEntityProcessor';
+export { CodeOwnersProcessor } from './CodeOwnersProcessor';
+export { FileReaderProcessor } from './FileReaderProcessor';
+export { GithubOrgReaderProcessor } from './GithubOrgReaderProcessor';
+export { OwnerRelationProcessor } from './OwnerRelationProcessor';
+export { LocationRefProcessor } from './LocationEntityProcessor';
+export { PlaceholderProcessor } from './PlaceholderProcessor';
+export type { PlaceholderResolver } from './PlaceholderProcessor';
+export { StaticLocationProcessor } from './StaticLocationProcessor';
+export { UrlReaderProcessor } from './UrlReaderProcessor';

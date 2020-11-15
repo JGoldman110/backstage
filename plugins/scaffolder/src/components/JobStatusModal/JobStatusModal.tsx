@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import React, { useEffect } from 'react';
-import {
-  Dialog,
-  LinearProgress,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-} from '@material-ui/core';
-import { JobStage } from '../JobStage/JobStage';
-import { useJobPolling } from './useJobPolling';
-import { Job } from '../../types';
 import { TemplateEntityV1alpha1 } from '@backstage/catalog-model';
 import { Button } from '@backstage/core';
-import { entityRouteDefault } from '@backstage/plugin-catalog';
+import { entityRoute, entityRouteParams } from '@backstage/plugin-catalog';
+import {
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  LinearProgress,
+} from '@material-ui/core';
+import React, { useEffect, useState } from 'react';
 import { generatePath } from 'react-router-dom';
+import { Job } from '../../types';
+import { JobStage } from '../JobStage/JobStage';
+import { useJobPolling } from './useJobPolling';
 
 type Props = {
   onClose: () => void;
@@ -43,16 +43,19 @@ export const JobStatusModal = ({
   entity,
 }: Props) => {
   const job = useJobPolling(jobId);
+  const [dialogTitle, setDialogTitle] = useState('Creating component...');
 
   useEffect(() => {
-    if (job?.status === 'COMPLETED') onComplete(job);
-  }, [job, onComplete]);
+    if (job?.status === 'COMPLETED') {
+      setDialogTitle('Successfully created component');
+      onComplete(job);
+    } else if (job?.status === 'FAILED')
+      setDialogTitle('Failed to create component');
+  }, [job, onComplete, setDialogTitle]);
 
   return (
     <Dialog open onClose={onClose} fullWidth>
-      <DialogTitle id="responsive-dialog-title">
-        Creating component...
-      </DialogTitle>
+      <DialogTitle id="responsive-dialog-title">{dialogTitle}</DialogTitle>
       <DialogContent>
         {!job ? (
           <LinearProgress />
@@ -72,15 +75,10 @@ export const JobStatusModal = ({
       {entity && (
         <DialogActions>
           <Button
-            to={generatePath(entityRouteDefault.path, {
-              kind: entity.kind,
-              optionalNamespaceAndName: [
-                entity.metadata.namespace,
-                entity.metadata.name,
-              ]
-                .filter(Boolean)
-                .join(':'),
-            })}
+            to={generatePath(
+              `/catalog/${entityRoute.path}`,
+              entityRouteParams(entity),
+            )}
           >
             View in catalog
           </Button>

@@ -14,18 +14,15 @@ To evaluate TechDocs and have a greater amount of functionality available, inste
 # in one terminal window, run this from from the very root of the Backstage project
 cd packages/backend
 yarn start
-
-# open another terminal window, and run the following from the very root of the Backstage project
-yarn lerna run mock-data
 ```
 
 ## What techdocs-backend does
 
-This plugin is the backend part of the techdocs plugin. It provides building and serving of your docs without having to use another service and hosting provider. To use it set your techdocs storageUrl in your `app-config.yml` to `http://localhost:7000/techdocs/static/docs`.
+This plugin is the backend part of the techdocs plugin. It provides building and serving of your docs without having to use another service and hosting provider. To use it set your techdocs storageUrl in your `app-config.yml` to `http://localhost:7000/api/techdocs/static/docs`.
 
 ```yaml
 techdocs:
-  storageUrl: http://localhost:7000/techdocs/static/docs
+  storageUrl: http://localhost:7000/api/techdocs/static/docs
 ```
 
 ## Extending techdocs-backend
@@ -36,7 +33,7 @@ Currently the build process of techdocs-backend is split up in these three stage
 - Generators
 - Publishers
 
-Preparers read your entity data and creates a working directory with your documentation source code. For example if you have set your `backstage.io/techdocs-ref` to `github:https://github.com/spotify/backstage.git` it will clone that repository to a temp folder and pass that on to the generator.
+Preparers read your entity data and creates a working directory with your documentation source code. For example if you have set your `backstage.io/techdocs-ref` to `github:https://github.com/backstage/backstage.git` it will clone that repository to a temp folder and pass that on to the generator.
 
 Generators takes the prepared source and runs the `techdocs-container` on it. It then passes on the output folder of that build to the publisher.
 
@@ -46,5 +43,5 @@ Any of these can be extended. If we want to publish to a external static file se
 
 ## Links
 
-- [Frontend part of the plugin](https://github.com/spotify/backstage/tree/master/plugins/techdocs)
+- [Frontend part of the plugin](https://github.com/backstage/backstage/tree/master/plugins/techdocs)
 - [The Backstage homepage](https://backstage.io)

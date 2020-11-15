@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { CatalogApi } from '@backstage/catalog-client';
 import { Entity } from '@backstage/catalog-model';
 import {
   ApiProvider,
@@ -25,8 +26,8 @@ import {
 import { MockStorageApi, wrapInTestApp } from '@backstage/test-utils';
 import { fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
-import { CatalogApi, catalogApiRef } from '../../api/types';
 import { EntityFilterGroupsProvider } from '../../filter';
+import { catalogApiRef } from '../../plugin';
 import { ButtonGroup, CatalogFilter } from './CatalogFilter';
 
 describe('Catalog Filter', () => {
@@ -58,7 +59,7 @@ describe('Catalog Filter', () => {
       ] as Entity[]),
   };
 
-  const indentityApi: Partial<IdentityApi> = {
+  const identityApi: Partial<IdentityApi> = {
     getUserId: () => 'tools@example.com',
   };
 
@@ -68,7 +69,7 @@ describe('Catalog Filter', () => {
         <ApiProvider
           apis={ApiRegistry.from([
             [catalogApiRef, catalogApi],
-            [identityApiRef, indentityApi],
+            [identityApiRef, identityApi],
             [storageApiRef, MockStorageApi.create()],
           ])}
         >

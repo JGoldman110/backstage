@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-export { resolveStaticConfig } from './resolver';
 export { readConfigFile } from './reader';
-export { readEnv } from './env';
+export { readEnvConfig } from './env';
 export { readSecret } from './secrets';

@@ -1,146 +1,279 @@
 app:
   title: Backstage Example App
   baseUrl: http://localhost:3000
+  googleAnalyticsTrackingId: # UA-000000-0
 
 backend:
   baseUrl: http://localhost:7000
   listen:
     port: 7000
+  database:
+    client: sqlite3
+    connection: ':memory:'
   cors:
     origin: http://localhost:3000
     methods: [GET, POST, PUT, DELETE]
     credentials: true
-  database:
-    client: sqlite3
-    connection: ':memory:'
+  csp:
+    connect-src: ["'self'", 'http:', 'https:']
+  # workingDirectory: /tmp # Use this to configure a working directory for the scaffolder, defaults to the OS temp-dir
 
 # See README.md in the proxy-backend plugin for information on the configuration format
 proxy:
-  '/circleci/api': https://circleci.com/api/v1.1
+  '/circleci/api':
+    target: https://circleci.com/api/v1.1
+    headers:
+      Circle-Token:
+        $env: CIRCLECI_AUTH_TOKEN
+
   '/jenkins/api':
     target: http://localhost:8080
     headers:
       Authorization:
-        $secret:
-          env: JENKINS_BASIC_AUTH_HEADER
+        $env: JENKINS_BASIC_AUTH_HEADER
+
+  '/travisci/api':
+    target: https://api.travis-ci.com
+    changeOrigin: true
+    headers:
+      Authorization:
+        $env: TRAVISCI_AUTH_TOKEN
+      travis-api-version: 3
+
+  '/newrelic/apm/api':
+    target: https://api.newrelic.com/v2
+    headers:
+      X-Api-Key:
+        $env: NEW_RELIC_REST_API_KEY
+
+  '/buildkite/api':
+    target: https://api.buildkite.com/v2/
+    headers:
+      Authorization:
+        $env: BUILDKITE_TOKEN
 
 organization:
-  name: Spotify
+  name: My Company
 
 techdocs:
-  storageUrl: http://localhost:7000/techdocs/static/docs
+  storageUrl: http://localhost:7000/api/techdocs/static/docs
+  requestUrl: http://localhost:7000/api/techdocs
+  generators:
+    techdocs: 'docker'
 
 sentry:
-  organization: spotify
+  organization: my-company
 
 rollbar:
-  organization: spotify
+  organization: my-company
   accountToken:
-    $secret:
-      env: ROLLBAR_ACCOUNT_TOKEN
+    $env: ROLLBAR_ACCOUNT_TOKEN
 
-newrelic:
-  api:
-    baseUrl: 'https://api.newrelic.com/v2'
-    key: NEW_RELIC_REST_API_KEY
+lighthouse:
+  baseUrl: http://localhost:3003
+
+kubernetes:
+  serviceLocatorMethod: 'multiTenant'
+  clusterLocatorMethods:
+    - 'config'
+  clusters: []
+
+integrations:
+  github:
+    - host: github.com
+      token:
+        $env: GITHUB_TOKEN
+    ### Example for how to add your GitHub Enterprise instance using the API:
+    # - host: ghe.example.net
+    #   apiBaseUrl: https://ghe.example.net/api/v3
+    #   token:
+    #     $env: GHE_TOKEN
+    ### Example for how to add your GitHub Enterprise instance using raw HTTP fetches (token is optional):
+    # - host: ghe.example.net
+    #   rawBaseUrl: https://ghe.example.net/raw
+    #   token:
+    #     $env: GHE_TOKEN
+  gitlab:
+    - host: gitlab.com
+      token:
+        $env: GITLAB_TOKEN
+  bitbucket:
+    - host: bitbucket.org
+      username:
+        $env: BITBUCKET_USERNAME
+      appPassword:
+        $env: BITBUCKET_APP_PASSWORD
+  azure:
+    - host: dev.azure.com
+      token:
+        $env: AZURE_TOKEN
 
 catalog:
-  exampleEntityLocations:
-    github:
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/artist-lookup-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/playback-order-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/podcast-api-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/queue-proxy-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/searcher-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/playback-lib-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/www-artist-component.yaml
-      - https://github.com/spotify/backstage/blob/master/packages/catalog-model/examples/shuffle-api-component.yaml
-      - https://github.com/spotify/backstage/blob/master/plugins/scaffolder-backend/sample-templates/react-ssr-template/template.yaml
-      - https://github.com/spotify/backstage/blob/master/plugins/scaffolder-backend/sample-templates/springboot-grpc-template/template.yaml
-      - https://github.com/spotify/backstage/blob/master/plugins/scaffolder-backend/sample-templates/create-react-app/template.yaml
-      - https://github.com/spotify/cookiecutter-golang/blob/master/template.yaml
-      - https://github.com/spotify/backstage/blob/master/plugins/scaffolder-backend/sample-templates/docs-template/template.yaml
+  rules:
+    - allow: [Component, API, Group, User, Template, Location]
+
+  processors:
+    githubOrg:
+      providers:
+        - target: https://github.com
+          token:
+            $env: GITHUB_TOKEN
+        #### Example for how to add your GitHub Enterprise instance using the API:
+        # - target: https://ghe.example.net
+        #   apiBaseUrl: https://ghe.example.net/api/v3
+        #   token:
+        #     $env: GHE_TOKEN
+    ldapOrg:
+      ### Example for how to add your enterprise LDAP server
+      # providers:
+      #   - target: ldaps://ds.example.net
+      #     bind:
+      #       dn: uid=ldap-reader-user,ou=people,ou=example,dc=example,dc=net
+      #       secret: { $secret: { env: LDAP_SECRET } }
+      #     users:
+      #       dn: ou=people,ou=example,dc=example,dc=net
+      #       options:
+      #         filter: (uid=*)
+      #       map:
+      #         description: l
+      #     groups:
+      #       dn: ou=access,ou=groups,ou=example,dc=example,dc=net
+      #       options:
+      #         filter: (&(objectClass=some-group-class)(!(groupType=email)))
+
+  locations:
+    # Backstage example components
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all-components.yaml
+    # Example component for github-actions
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/plugins/github-actions/examples/sample.yaml
+    # Example component for techdocs
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/plugins/techdocs-backend/examples/documented-component/documented-component.yaml
+    # Backstage example APIs
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/all-apis.yaml
+    # Backstage example templates
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/plugins/scaffolder-backend/sample-templates/all-templates.yaml
+    # Backstage example groups and users
+    - type: url
+      target: https://github.com/backstage/backstage/blob/master/packages/catalog-model/examples/acme-corp.yaml
+
+scaffolder:
+  github:
+    token:
+      $env: GITHUB_TOKEN
+    visibility: public # or 'internal' or 'private'
+  gitlab:
+    api:
+      baseUrl: https://gitlab.com
+      token:
+        $env: GITLAB_TOKEN
+  azure:
+    baseUrl: https://dev.azure.com/{your-organization}
+    api:
+      token:
+        $env: AZURE_TOKEN
 
 auth:
   providers:
     google:
       development:
         clientId:
-          $secret:
-            env: AUTH_GOOGLE_CLIENT_ID
+          $env: AUTH_GOOGLE_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_GOOGLE_CLIENT_SECRET
+          $env: AUTH_GOOGLE_CLIENT_SECRET
     github:
       development:
         clientId:
-          $secret:
-            env: AUTH_GITHUB_CLIENT_ID
+          $env: AUTH_GITHUB_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_GITHUB_CLIENT_SECRET
+          $env: AUTH_GITHUB_CLIENT_SECRET
         enterpriseInstanceUrl:
-          $secret:
-            env: AUTH_GITHUB_ENTERPRISE_INSTANCE_URL
+          $env: AUTH_GITHUB_ENTERPRISE_INSTANCE_URL
     gitlab:
       development:
         clientId:
-          $secret:
-            env: AUTH_GITLAB_CLIENT_ID
+          $env: AUTH_GITLAB_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_GITLAB_CLIENT_SECRET
+          $env: AUTH_GITLAB_CLIENT_SECRET
         audience:
-          $secret:
-            env: GITLAB_BASE_URL
-    # saml:
-    #   development:
-    #     entryPoint: "http://localhost:7001/"
-    #     issuer: "passport-saml"
+          $env: GITLAB_BASE_URL
+    saml:
+      entryPoint: 'http://localhost:7001/'
+      issuer: 'passport-saml'
     okta:
       development:
         clientId:
-          $secret:
-            env: AUTH_OKTA_CLIENT_ID
+          $env: AUTH_OKTA_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_OKTA_CLIENT_SECRET
+          $env: AUTH_OKTA_CLIENT_SECRET
         audience:
-          $secret:
-            env: AUTH_OKTA_AUDIENCE
+          $env: AUTH_OKTA_AUDIENCE
     oauth2:
       development:
         clientId:
-          $secret:
-            env: AUTH_OAUTH2_CLIENT_ID
+          $env: AUTH_OAUTH2_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_OAUTH2_CLIENT_SECRET
+          $env: AUTH_OAUTH2_CLIENT_SECRET
         authorizationUrl:
-          $secret:
-            env: AUTH_OAUTH2_AUTH_URL
+          $env: AUTH_OAUTH2_AUTH_URL
         tokenUrl:
-          $secret:
-            env: AUTH_OAUTH2_TOKEN_URL
+          $env: AUTH_OAUTH2_TOKEN_URL
     auth0:
       development:
         clientId:
-          $secret:
-            env: AUTH_AUTH0_CLIENT_ID
+          $env: AUTH_AUTH0_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_AUTH0_CLIENT_SECRET
+          $env: AUTH_AUTH0_CLIENT_SECRET
         domain:
-          $secret:
-            env: AUTH_AUTH0_DOMAIN
+          $env: AUTH_AUTH0_DOMAIN
     microsoft:
       development:
         clientId:
-          $secret:
-            env: AUTH_MICROSOFT_CLIENT_ID
+          $env: AUTH_MICROSOFT_CLIENT_ID
         clientSecret:
-          $secret:
-            env: AUTH_MICROSOFT_CLIENT_SECRET
+          $env: AUTH_MICROSOFT_CLIENT_SECRET
         tenantId:
-          $secret:
-            env: AUTH_MICROSOFT_TENANT_ID
+          $env: AUTH_MICROSOFT_TENANT_ID
+    onelogin:
+      development:
+        clientId:
+          $env: AUTH_ONELOGIN_CLIENT_ID
+        clientSecret:
+          $env: AUTH_ONELOGIN_CLIENT_SECRET
+        issuer:
+          $env: AUTH_ONELOGIN_ISSUER
+costInsights:
+  engineerCost: 200000
+  products:
+    computeEngine:
+      name: Compute Engine
+      icon: compute
+    cloudDataflow:
+      name: Cloud Dataflow
+      icon: data
+    cloudStorage:
+      name: Cloud Storage
+      icon: storage
+    bigQuery:
+      name: BigQuery
+      icon: search
+  metrics:
+    DAU:
+      name: Daily Active Users
+      default: true
+    MSC:
+      name: Monthly Subscribers
+homepage:
+  clocks:
+    - label: UTC
+      timzone: UTC
+    - label: NYC
+      timezone: 'America/New_York'
+    - label: STO
+      timezone: 'Europe/Stockholm'
+    - label: TYO
+      timezone: 'Asia/Tokyo'

@@ -29,9 +29,9 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import StarIcon from '@material-ui/icons/Star';
 import React, { useCallback, useMemo, useState } from 'react';
 import { Link as RouterLink } from 'react-router-dom';
-import { catalogApiRef } from '../../api/types';
 import { EntityFilterGroupsProvider, useFilteredEntities } from '../../filter';
-import { useStarredEntities } from '../../hooks/useStarredEntites';
+import { useStarredEntities } from '../../hooks/useStarredEntities';
+import { catalogApiRef } from '../../plugin';
 import { ButtonGroup, CatalogFilter } from '../CatalogFilter/CatalogFilter';
 import { CatalogTable } from '../CatalogTable/CatalogTable';
 import { ResultsFilter } from '../ResultsFilter/ResultsFilter';
@@ -46,6 +46,9 @@ const useStyles = makeStyles(theme => ({
     gridTemplateColumns: '250px 1fr',
     gridColumnGap: theme.spacing(2),
   },
+  buttonSpacing: {
+    marginLeft: theme.spacing(2),
+  },
 }));
 
 const CatalogPageContents = () => {
@@ -56,6 +59,7 @@ const CatalogPageContents = () => {
     reload,
     matchingEntities,
     availableTags,
+    isCatalogEmpty,
   } = useFilteredEntities();
   const configApi = useApi(configApiRef);
   const catalogApi = useApi(catalogApiRef);
@@ -72,7 +76,7 @@ const CatalogPageContents = () => {
       const root = configApi.getConfig('catalog.exampleEntityLocations');
       for (const type of root.keys()) {
         for (const target of root.getStringArray(type)) {
-          promises.push(catalogApi.addLocation(type, target));
+          promises.push(catalogApi.addLocation({ target }));
         }
       }
       await Promise.all(promises);
@@ -141,6 +145,9 @@ const CatalogPageContents = () => {
     [isStarredEntity, userId, orgName],
   );
 
+  const showAddExampleEntities =
+    configApi.has('catalog.exampleEntityLocations') && isCatalogEmpty;
+
   return (
     <CatalogLayout>
       <CatalogTabs
@@ -158,6 +165,16 @@ const CatalogPageContents = () => {
           >
             Create Component
           </Button>
+          {showAddExampleEntities && (
+            <Button
+              className={styles.buttonSpacing}
+              variant="outlined"
+              color="primary"
+              onClick={addMockData}
+            >
+              Add example components
+            </Button>
+          )}
           <SupportButton>All your software catalog entities</SupportButton>
         </ContentHeader>
         <div className={styles.contentWrapper}>
@@ -174,7 +191,6 @@ const CatalogPageContents = () => {
             entities={matchingEntities}
             loading={loading}
             error={error}
-            onAddMockData={addMockData}
           />
         </div>
       </Content>

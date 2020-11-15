@@ -22,7 +22,6 @@ import {
   Lifecycle,
   Page,
   useApi,
-  pageTheme,
 } from '@backstage/core';
 import { catalogApiRef } from '@backstage/plugin-catalog';
 import { LinearProgress } from '@material-ui/core';
@@ -67,6 +66,11 @@ const OWNER_REPO_SCHEMA = {
       title: 'Store path',
       description: 'GitHub store path in org/repo format',
     },
+    access: {
+      type: 'string' as const,
+      title: 'Access',
+      description: 'Who should have access, in org/team or user format',
+    },
   },
 };
 
@@ -91,8 +95,12 @@ export const TemplatePage = () => {
   const handleClose = () => setJobId(null);
 
   const handleCreate = async () => {
-    const job = await scaffolderApi.scaffold(template!, formState);
-    setJobId(job);
+    try {
+      const job = await scaffolderApi.scaffold(templateName, formState);
+      setJobId(job);
+    } catch (e) {
+      errorApi.post(e);
+    }
   };
 
   const [entity, setEntity] = React.useState<TemplateEntityV1alpha1 | null>(
@@ -100,12 +108,15 @@ export const TemplatePage = () => {
   );
 
   const handleCreateComplete = async (job: Job) => {
-    const componentYaml = job.metadata.remoteUrl?.replace(
+    const target = job.metadata.remoteUrl?.replace(
       /\.git$/,
+      // TODO(Rugvip): This is not the location we want. As part of scaffodler v2 we
+      //               want this to be more flexible, but before that we might want
+      //               to update all templates to use catalog-info.yaml instead.
       '/blob/master/component-info.yaml',
     );
 
-    if (!componentYaml) {
+    if (!target) {
       errorApi.post(
         new Error(
           `Failed to find component-info.yaml file in ${job.metadata.remoteUrl}.`,
@@ -116,7 +127,7 @@ export const TemplatePage = () => {
 
     const {
       entities: [createdEntity],
-    } = await catalogApi.addLocation('github', componentYaml);
+    } = await catalogApi.addLocation({ target });
 
     setEntity((createdEntity as any) as TemplateEntityV1alpha1);
   };
@@ -136,7 +147,7 @@ export const TemplatePage = () => {
   }
 
   return (
-    <Page theme={pageTheme.other}>
+    <Page themeId="home">
       <Header
         pageTitleOverride="Create a new component"
         title={
@@ -157,7 +168,7 @@ export const TemplatePage = () => {
           />
         )}
         {template && (
-          <InfoCard title={template.metadata.title as string} noPadding>
+          <InfoCard title={template.metadata.title} noPadding>
             <MultistepJsonForm
               formData={formState}
               onChange={handleChange}

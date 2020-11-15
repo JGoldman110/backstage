@@ -14,10 +14,11 @@ The plugin provides a standalone list of APIs, as well as an integration into th
 
 Right now, the following API formats are supported:
 
-- [OpenAPI](https://swagger.io/specification/) 2 & 3,
-- [AsyncAPI](https://www.asyncapi.com/docs/specifications/latest/),
+- [OpenAPI](https://swagger.io/specification/) 2 & 3
+- [AsyncAPI](https://www.asyncapi.com/docs/specifications/latest/)
+- [GraphQL](https://graphql.org/learn/schema/)
 
-Other formats are displayed as plain text, but this can easily be extented.
+Other formats are displayed as plain text, but this can easily be extended.
 
 To fill the catalog with APIs, [provide entities of kind API](https://backstage.io/docs/features/software-catalog/descriptor-format#kind-api).
 To link that an component implements an API, see [`implementsApis` property on components](https://backstage.io/docs/features/software-catalog/descriptor-format#specimplementsapis-optional).

@@ -1,6 +1,8 @@
 ---
 id: adopting
 title: Strategies for adopting
+description: Documentation on some general best practices that have been key
+to Backstage's success inside Spotify
 ---
 
 This document outlines some general best practices that have been key to
@@ -40,7 +42,7 @@ infra/platform teams and end-users:
 ![pop](../assets/pop.png)
 
 While anyone at your company can contribute to the platform, the vast majority
-of work will be done by teams that also has internal engineers as their
+of work will be done by teams that also have internal engineers as their
 customers. The central team should treat these _contributing teams_ as customers
 of the platform as well.
 
@@ -49,9 +51,9 @@ customers. This is done primarily by building [plugins](../plugins/index.md).
 Contributing teams should themselves treat their plugins as, or part of, the
 products they maintain.
 
-> Case study: Inside Spotify we have a team that owns our CI platform. They
-> don't only maintain the pipelines and build servers, but also expose their
-> product in Backstage through a plugin. Since they also
+> Case study: Inside Spotify we have a team that owns our CI platform. They not
+> only maintain the pipelines and build servers, but also expose their product
+> in Backstage through a plugin. Since they also
 > [maintain their own API](../plugins/call-existing-api.md), they can improve
 > their product by iterating on API and UI in lockstep. Because the plugin
 > follows our [platform design guidelines](../dls/design.md) their customers get
@@ -87,14 +89,17 @@ Example of tactics we have used to evangelize Backstage internally:
 - Pro-actively identify new plugins. Reach out to teams that own internal UIs or
   platforms that you think would make sense to consolidate into Backstage.
 
-## Metrics
+## KPIs and metrics
 
 These are some of the metrics that you can use to verify if Backstage has a
 successful impact on your software development process:
 
 - **Onboarding time** Time until new engineers are productive. At Spotify we
   measure this as the time until the employee has merged their 10th PR (this
-  metric was down 55% two years after deploying Backstage).
+  metric was down 55% two years after deploying Backstage). Even though you may
+  not be onboarding engineers at a rapid pace, this metric is a great proxy for
+  the overall complexity of your ecosystem. Reducing it will therefore benefit
+  your whole engineering organization, not just new joiners.
 
 - **Number of merges per developer/day** Less time spent jumping between
   different tools and looking for information means more time to focus on
@@ -118,14 +123,14 @@ successful impact on your software development process:
   engineer is someone that is able to contribute to different domains of
   engineering. Teams with T-shaped people have fewer bottlenecks and can
   therefore deliver more consistently. Backstage makes it easier to be T-shaped
-  since tools and infrastructure is consistent between domains, and information
+  since tools and infrastructure are consistent between domains, and information
   is available centrally.
 
 - **eNPS** Surveys asking about how productive people feel, how easy it is to
   find information and overall satisfaction with internal tools.
 
 - **Fragmentation** _(Experimental)_ Backstage
-  [Software Templates](../features/software-templates/index.md) helps drive
+  [Software Templates](../features/software-templates/index.md) help drive
   standardization in your software ecosystem. By measuring the variance in
   technology between different software components it is possible to get a sense
   of the overall fragmentation in your ecosystem. Examples could include:
@@ -142,3 +147,16 @@ Backstage as _the_ platform:
 
 - % of contributions coming from outside the central Backstage team (currently
   85% inside Spotify)
+
+- Traditional metrics such as visits (MAU, DAU, etc) and page views. Currently
+  ~50% of all Spotifiers use Backstage on a monthly basis, even though the
+  percentage of engineers is below 50%. Most engineers actually use Backstage on
+  a daily basis.
+
+Again, any feedback is appreciated. Please use the Edit button at the top of the
+page to make a suggestion.
+
+_**Note!** It might be tempting to try to optimize Backstage usage and
+"engagement". Even though you want to consolidate all your tooling and technical
+documentation in Backstage, it is important to remember that time spent in
+Backstage is time not spent writing code_ 🙃

@@ -17,15 +17,16 @@
 import React, { FC } from 'react';
 import privateExports, {
   AppOptions,
-  ApiRegistry,
   defaultSystemIcons,
   BootErrorPageProps,
   AppConfigLoader,
 } from '@backstage/core-api';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
-
+import LightIcon from '@material-ui/icons/WbSunny';
+import DarkIcon from '@material-ui/icons/Brightness2';
 import { ErrorPage } from '../layout/ErrorPage';
 import { Progress } from '../components/Progress';
+import { defaultApis } from './defaultApis';
 import { lightTheme, darkTheme } from '@backstage/theme';
 import { AppConfig, JsonObject } from '@backstage/config';
 
@@ -66,6 +67,13 @@ export const defaultConfigLoader: AppConfigLoader = async (
     }
   }
 
+  const windowAppConfig = (window as any).__APP_CONFIG__;
+  if (windowAppConfig) {
+    configs.push({
+      context: 'window',
+      data: windowAppConfig,
+    });
+  }
   return configs;
 };
 
@@ -94,7 +102,7 @@ export function createApp(options?: AppOptions) {
     );
   };
 
-  const apis = options?.apis ?? ApiRegistry.from([]);
+  const apis = options?.apis ?? [];
   const icons = { ...defaultSystemIcons, ...options?.icons };
   const plugins = options?.plugins ?? [];
   const components = {
@@ -110,12 +118,14 @@ export function createApp(options?: AppOptions) {
       title: 'Light Theme',
       variant: 'light',
       theme: lightTheme,
+      icon: <LightIcon />,
     },
     {
       id: 'dark',
       title: 'Dark Theme',
       variant: 'dark',
       theme: darkTheme,
+      icon: <DarkIcon />,
     },
   ];
   const configLoader = options?.configLoader ?? defaultConfigLoader;
@@ -127,6 +137,7 @@ export function createApp(options?: AppOptions) {
     components,
     themes,
     configLoader,
+    defaultApis,
   });
 
   app.verify();

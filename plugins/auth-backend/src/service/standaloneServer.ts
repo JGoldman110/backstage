@@ -17,12 +17,12 @@
 import Knex from 'knex';
 import { Server } from 'http';
 import { Logger } from 'winston';
-import { ConfigReader } from '@backstage/config';
 import { createRouter } from './router';
 import {
   createServiceBuilder,
   useHotMemoize,
   loadBackendConfig,
+  SingleHostDiscovery,
 } from '@backstage/backend-common';
 
 export interface ServerOptions {
@@ -33,7 +33,8 @@ export async function startStandaloneServer(
   options: ServerOptions,
 ): Promise<Server> {
   const logger = options.logger.child({ service: 'auth-backend' });
-  const config = ConfigReader.fromConfigs(await loadBackendConfig());
+  const config = await loadBackendConfig({ logger, argv: process.argv });
+  const discovery = SingleHostDiscovery.fromConfig(config);
 
   const database = useHotMemoize(module, () => {
     const knex = Knex({
@@ -51,7 +52,12 @@ export async function startStandaloneServer(
   const router = await createRouter({
     logger,
     config,
-    database,
+    database: {
+      async getClient() {
+        return database;
+      },
+    },
+    discovery,
   });
 
   const service = createServiceBuilder(module)
