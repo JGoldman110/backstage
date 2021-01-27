@@ -4938,10 +4938,10 @@
   dependencies:
     "@types/node" "*"
 
-"@types/codemirror@^0.0.97":
-  version "0.0.97"
-  resolved "https://registry.npmjs.org/@types/codemirror/-/codemirror-0.0.97.tgz#6f2d8266b7f1b34aacfe8c77221fafe324c3d081"
-  integrity sha512-n5d7o9nWhC49DjfhsxANP7naWSeTzrjXASkUDQh7626sM4zK9XP2EVcHp1IcCf/IPV6c7ORzDUDF3Bkt231VKg==
+"@types/codemirror@^0.0.106":
+  version "0.0.106"
+  resolved "https://registry.npmjs.org/@types/codemirror/-/codemirror-0.0.106.tgz#0e4adcf51c4ff201ac25adba22771938dbcf1d72"
+  integrity sha512-o2bJWaI56+J1IuzUyb1KKNLs0Tm1sqdosGeSneicQZpg9s59++8Nz70KOD6IACiZWI6b+H0H+UE+JRkgTUO3Ww==
   dependencies:
     "@types/tern" "*"
 
