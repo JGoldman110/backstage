@@ -17,7 +17,7 @@
 import { getVoidLogger } from '@backstage/backend-common';
 import { Entity, LOCATION_ANNOTATION } from '@backstage/catalog-model';
 import { Database, DatabaseManager, Transaction } from '../database';
-import { EntityFilters } from '../service/EntityFilters';
+import { basicEntityFilter } from '../service/request';
 import { DatabaseEntitiesCatalog } from './DatabaseEntitiesCatalog';
 import { EntityUpsertRequest } from './types';
 
@@ -63,7 +63,10 @@ describe('DatabaseEntitiesCatalog', () => {
         },
       };
 
-      db.entities.mockResolvedValue([]);
+      db.entities.mockResolvedValue({
+        entities: [],
+        pageInfo: { hasNextPage: false },
+      });
       db.addEntities.mockResolvedValue([
         { entity: { ...entity, metadata: { ...entity.metadata, uid: 'u' } } },
       ]);
@@ -74,15 +77,17 @@ describe('DatabaseEntitiesCatalog', () => {
       ]);
 
       expect(db.entities).toHaveBeenCalledTimes(1);
-      expect(db.entities).toHaveBeenCalledWith(
-        expect.anything(),
-        EntityFilters.ofFilterString(
-          'kind=b,metadata.namespace=d,metadata.name=c',
-        ),
-      );
-      expect(db.setRelations).toHaveBeenCalledTimes(1);
-      expect(db.setRelations).toHaveBeenCalledWith(expect.anything(), 'u', []);
+      expect(db.entities).toHaveBeenCalledWith(expect.anything(), {
+        filter: basicEntityFilter({
+          kind: 'b',
+          'metadata.namespace': 'd',
+          'metadata.name': 'c',
+        }),
+      });
       expect(db.addEntities).toHaveBeenCalledTimes(1);
+      expect(db.addEntities).toHaveBeenCalledWith(expect.anything(), [
+        { entity: expect.anything(), relations: [] },
+      ]);
       expect(result).toEqual([{ entityId: 'u' }]);
     });
 
@@ -95,7 +100,10 @@ describe('DatabaseEntitiesCatalog', () => {
           namespace: 'd',
         },
       };
-      db.entities.mockResolvedValue([]);
+      db.entities.mockResolvedValue({
+        entities: [],
+        pageInfo: { hasNextPage: false },
+      });
       db.addEntities.mockResolvedValue([
         { entity: { ...entity, metadata: { ...entity.metadata, uid: 'u' } } },
       ]);
@@ -107,15 +115,17 @@ describe('DatabaseEntitiesCatalog', () => {
       );
 
       expect(db.entities).toHaveBeenCalledTimes(1);
-      expect(db.entities).toHaveBeenCalledWith(
-        expect.anything(),
-        EntityFilters.ofFilterString(
-          'kind=b,metadata.namespace=d,metadata.name=c',
-        ),
-      );
-      expect(db.setRelations).toHaveBeenCalledTimes(1);
-      expect(db.setRelations).toHaveBeenCalledWith(expect.anything(), 'u', []);
+      expect(db.entities).toHaveBeenCalledWith(expect.anything(), {
+        filter: basicEntityFilter({
+          kind: 'b',
+          'metadata.namespace': 'd',
+          'metadata.name': 'c',
+        }),
+      });
       expect(db.addEntities).toHaveBeenCalledTimes(1);
+      expect(db.addEntities).toHaveBeenCalledWith(expect.anything(), [
+        { entity: expect.anything(), relations: [] },
+      ]);
       expect(transaction.rollback).toBeCalledTimes(1);
       expect(result).toEqual([{ entityId: 'u' }]);
     });
@@ -145,11 +155,10 @@ describe('DatabaseEntitiesCatalog', () => {
           },
         },
       };
-      db.entities.mockResolvedValue([
-        {
-          entity: dbEntity,
-        },
-      ]);
+      db.entities.mockResolvedValue({
+        entities: [{ entity: dbEntity }],
+        pageInfo: { hasNextPage: false },
+      });
       db.addEntities.mockResolvedValue([
         { entity: { ...entity, metadata: { ...entity.metadata, uid: 'u' } } },
       ]);
@@ -161,7 +170,7 @@ describe('DatabaseEntitiesCatalog', () => {
       );
 
       expect(db.entities).toHaveBeenCalledTimes(2);
-      expect(db.setRelations).toHaveBeenCalledTimes(1);
+      expect(db.addEntities).toHaveBeenCalledTimes(1);
       expect(result).toEqual([
         {
           entityId: 'u',
@@ -200,7 +209,10 @@ describe('DatabaseEntitiesCatalog', () => {
         },
       };
 
-      db.entities.mockResolvedValue([existing]);
+      db.entities.mockResolvedValue({
+        entities: [existing],
+        pageInfo: { hasNextPage: false },
+      });
       db.entityByUid.mockResolvedValue(existing);
       db.updateEntity.mockResolvedValue({ entity });
 
@@ -210,12 +222,13 @@ describe('DatabaseEntitiesCatalog', () => {
       ]);
 
       expect(db.entities).toHaveBeenCalledTimes(1);
-      expect(db.entities).toHaveBeenCalledWith(
-        expect.anything(),
-        EntityFilters.ofFilterString(
-          'kind=b,metadata.namespace=d,metadata.name=c',
-        ),
-      );
+      expect(db.entities).toHaveBeenCalledWith(expect.anything(), {
+        filter: basicEntityFilter({
+          kind: 'b',
+          'metadata.namespace': 'd',
+          'metadata.name': 'c',
+        }),
+      });
       expect(db.entityByName).not.toHaveBeenCalled();
       expect(db.entityByUid).toHaveBeenCalledTimes(1);
       expect(db.entityByUid).toHaveBeenCalledWith(transaction, 'u');
@@ -237,12 +250,11 @@ describe('DatabaseEntitiesCatalog', () => {
               x: 'b',
             },
           },
+          relations: [],
         },
         'e',
         1,
       );
-      expect(db.setRelations).toHaveBeenCalledTimes(1);
-      expect(db.setRelations).toHaveBeenCalledWith(expect.anything(), 'u', []);
       expect(result).toEqual([{ entityId: 'u' }]);
     });
 
@@ -275,7 +287,10 @@ describe('DatabaseEntitiesCatalog', () => {
         },
       };
 
-      db.entities.mockResolvedValue([existing]);
+      db.entities.mockResolvedValue({
+        entities: [existing],
+        pageInfo: { hasNextPage: false },
+      });
       db.entityByName.mockResolvedValue(existing);
       db.updateEntity.mockResolvedValue(existing);
 
@@ -285,12 +300,13 @@ describe('DatabaseEntitiesCatalog', () => {
       ]);
 
       expect(db.entities).toHaveBeenCalledTimes(1);
-      expect(db.entities).toHaveBeenCalledWith(
-        expect.anything(),
-        EntityFilters.ofFilterString(
-          'kind=b,metadata.namespace=d,metadata.name=c',
-        ),
-      );
+      expect(db.entities).toHaveBeenCalledWith(expect.anything(), {
+        filter: basicEntityFilter({
+          kind: 'b',
+          'metadata.namespace': 'd',
+          'metadata.name': 'c',
+        }),
+      });
       expect(db.entityByName).toHaveBeenCalledTimes(1);
       expect(db.entityByName).toHaveBeenCalledWith(transaction, {
         kind: 'b',
@@ -315,6 +331,7 @@ describe('DatabaseEntitiesCatalog', () => {
               x: 'b',
             },
           },
+          relations: [],
         },
         'e',
         1,
@@ -336,7 +353,10 @@ describe('DatabaseEntitiesCatalog', () => {
         },
       };
 
-      db.entities.mockResolvedValue([{ entity }]);
+      db.entities.mockResolvedValue({
+        entities: [{ entity }],
+        pageInfo: { hasNextPage: false },
+      });
       db.entityByUid.mockResolvedValue({ entity });
       db.updateEntity.mockResolvedValue({ entity });
 
@@ -346,12 +366,13 @@ describe('DatabaseEntitiesCatalog', () => {
       ]);
 
       expect(db.entities).toHaveBeenCalledTimes(1);
-      expect(db.entities).toHaveBeenCalledWith(
-        expect.anything(),
-        EntityFilters.ofFilterString(
-          'kind=b,metadata.namespace=d,metadata.name=c',
-        ),
-      );
+      expect(db.entities).toHaveBeenCalledWith(expect.anything(), {
+        filter: basicEntityFilter({
+          kind: 'b',
+          'metadata.namespace': 'd',
+          'metadata.name': 'c',
+        }),
+      });
       expect(db.entityByName).not.toHaveBeenCalled();
       expect(db.entityByUid).not.toHaveBeenCalled();
       expect(db.updateEntity).not.toHaveBeenCalled();
@@ -379,7 +400,7 @@ describe('DatabaseEntitiesCatalog', () => {
 
       await catalog.batchAddOrUpdateEntities(entities);
       const afterFirst = await catalog.entities();
-      expect(afterFirst.length).toBe(300);
+      expect(afterFirst.entities.length).toBe(300);
 
       entities[40].entity.metadata.op = 'changed';
       entities.push({
@@ -393,9 +414,13 @@ describe('DatabaseEntitiesCatalog', () => {
 
       await catalog.batchAddOrUpdateEntities(entities);
       const afterSecond = await catalog.entities();
-      expect(afterSecond.length).toBe(301);
-      expect(afterSecond.find(e => e.metadata.op === 'changed')).toBeDefined();
-      expect(afterSecond.find(e => e.metadata.op === 'added')).toBeDefined();
+      expect(afterSecond.entities.length).toBe(301);
+      expect(
+        afterSecond.entities.find(e => e.metadata.op === 'changed'),
+      ).toBeDefined();
+      expect(
+        afterSecond.entities.find(e => e.metadata.op === 'added'),
+      ).toBeDefined();
     }, 10000);
   });
 });

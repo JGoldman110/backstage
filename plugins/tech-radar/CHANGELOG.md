@@ -1,5 +1,112 @@
 # @backstage/plugin-tech-radar
 
+## 0.3.9
+
+### Patch Changes
+
+- 184b02bef: Add markdown support for tech radar entry description
+- Updated dependencies [d0d1c2f7b]
+- Updated dependencies [5cafcf452]
+- Updated dependencies [86a95ba67]
+- Updated dependencies [e27cb6c45]
+  - @backstage/core@0.7.5
+
+## 0.3.8
+
+### Patch Changes
+
+- 34e6bb409: Map description in API RadarEntry to Entry
+
+  The description in the Entry was mapped to the latest timeline entry, which is a changelog. This
+  change maps the description in the API to the entry. To maintain backwards compatibility it
+  will set the description to the last timeline entry if no description exists at the entry level.
+
+- b56815b40: Fixes issue where radar description dialog is not shown when the entry has an url external to the radar page
+- Updated dependencies [8686eb38c]
+- Updated dependencies [9ca0e4009]
+- Updated dependencies [34ff49b0f]
+  - @backstage/core@0.7.2
+
+## 0.3.7
+
+### Patch Changes
+
+- Updated dependencies [40c0fdbaa]
+- Updated dependencies [2a271d89e]
+- Updated dependencies [bece09057]
+- Updated dependencies [169f48deb]
+- Updated dependencies [8a1566719]
+- Updated dependencies [4c049a1a1]
+  - @backstage/core@0.7.0
+
+## 0.3.6
+
+### Patch Changes
+
+- 9f2b3a26e: Added a dialog box that will show up when a you click on link on the radar and display the description if provided.
+- Updated dependencies [3a58084b6]
+- Updated dependencies [e799e74d4]
+- Updated dependencies [1407b34c6]
+- Updated dependencies [9615e68fb]
+- Updated dependencies [49f9b7346]
+- Updated dependencies [3a58084b6]
+- Updated dependencies [2c1f2a7c2]
+  - @backstage/core@0.6.3
+
+## 0.3.5
+
+### Patch Changes
+
+- 804502a5c: Migrated to new composability API, exporting the plugin instance as `techRadarPlugin` and the page as `TechRadarPage`.
+- Updated dependencies [b51ee6ece]
+  - @backstage/core@0.6.1
+
+## 0.3.4
+
+### Patch Changes
+
+- 90c8f20b9: Fix mapping RadarEntry and Entry for moved and url attributes
+  Fix clicking of links in the radar legend
+- Updated dependencies [12ece98cd]
+- Updated dependencies [d82246867]
+- Updated dependencies [c810082ae]
+- Updated dependencies [5fa3bdb55]
+- Updated dependencies [21e624ba9]
+- Updated dependencies [da9f53c60]
+- Updated dependencies [32c95605f]
+- Updated dependencies [54c7d02f7]
+  - @backstage/core@0.6.0
+  - @backstage/theme@0.2.3
+
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [efd6ef753]
+- Updated dependencies [a187b8ad0]
+  - @backstage/core@0.5.0
+
+## 0.3.2
+
+### Patch Changes
+
+- ab0892358: Remove test dependencies from production package list
+- bc909178d: Updated example data in `README`.
+
+## 0.3.1
+
+### Patch Changes
+
+- Updated dependencies [2527628e1]
+- Updated dependencies [e1f4e24ef]
+- Updated dependencies [1c69d4716]
+- Updated dependencies [1665ae8bb]
+- Updated dependencies [04f26f88d]
+- Updated dependencies [ff243ce96]
+  - @backstage/core@0.4.0
+  - @backstage/test-utils@0.1.5
+  - @backstage/theme@0.2.2
+
 ## 0.3.0
 
 ### Minor Changes

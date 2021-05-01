@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
+import { EntityName } from '@backstage/catalog-model';
 import { createApiRef } from '@backstage/core';
-
-import { ParsedEntityId } from './types';
+import { TechDocsEntityMetadata, TechDocsMetadata } from './types';
 
 export const techdocsStorageApiRef = createApiRef<TechDocsStorageApi>({
   id: 'plugin.techdocs.storageservice',
@@ -28,71 +28,21 @@ export const techdocsApiRef = createApiRef<TechDocsApi>({
   description: 'Used to make requests towards techdocs API',
 });
 
-export interface TechDocsStorage {
-  getEntityDocs(entityId: ParsedEntityId, path: string): Promise<string>;
+export interface TechDocsStorageApi {
+  getApiOrigin(): Promise<string>;
+  getStorageUrl(): Promise<string>;
+  getBuilder(): Promise<string>;
+  getEntityDocs(entityId: EntityName, path: string): Promise<string>;
+  syncEntityDocs(entityId: EntityName): Promise<boolean>;
   getBaseUrl(
     oldBaseUrl: string,
-    entityId: ParsedEntityId,
+    entityId: EntityName,
     path: string,
-  ): string;
+  ): Promise<string>;
 }
 
-export interface TechDocs {
-  getMetadata(metadataType: string, entityId: ParsedEntityId): Promise<string>;
-}
-
-export class TechDocsApi implements TechDocs {
-  public apiOrigin: string;
-
-  constructor({ apiOrigin }: { apiOrigin: string }) {
-    this.apiOrigin = apiOrigin;
-  }
-
-  async getMetadata(metadataType: string, entityId: ParsedEntityId) {
-    const { kind, namespace, name } = entityId;
-
-    const requestUrl = `${this.apiOrigin}/metadata/${metadataType}/${namespace}/${kind}/${name}`;
-
-    const request = await fetch(`${requestUrl}`);
-    const res = await request.json();
-
-    return res;
-  }
-}
-
-export class TechDocsStorageApi implements TechDocsStorage {
-  public apiOrigin: string;
-
-  constructor({ apiOrigin }: { apiOrigin: string }) {
-    this.apiOrigin = apiOrigin;
-  }
-
-  async getEntityDocs(entityId: ParsedEntityId, path: string) {
-    const { kind, namespace, name } = entityId;
-
-    const url = `${this.apiOrigin}/docs/${namespace}/${kind}/${name}/${path}`;
-
-    const request = await fetch(
-      `${url.endsWith('/') ? url : `${url}/`}index.html`,
-    );
-
-    if (request.status === 404) {
-      throw new Error('Page not found');
-    }
-
-    return request.text();
-  }
-
-  getBaseUrl(
-    oldBaseUrl: string,
-    entityId: ParsedEntityId,
-    path: string,
-  ): string {
-    const { kind, namespace, name } = entityId;
-
-    return new URL(
-      oldBaseUrl,
-      `${this.apiOrigin}/docs/${namespace}/${kind}/${name}/${path}`,
-    ).toString();
-  }
+export interface TechDocsApi {
+  getApiOrigin(): Promise<string>;
+  getTechDocsMetadata(entityId: EntityName): Promise<TechDocsMetadata>;
+  getEntityMetadata(entityId: EntityName): Promise<TechDocsEntityMetadata>;
 }

@@ -57,7 +57,7 @@ export type UserConfig = {
   // default is scope "one" and attributes "*" and "+".
   options: SearchOptions;
   // JSON paths (on a.b.c form) and hard coded values to set on those paths
-  set?: { path: string; value: JsonValue }[];
+  set?: { [path: string]: JsonValue };
   // Mappings from well known entity fields, to LDAP attribute names
   map: {
     // The name of the attribute that holds the relative distinguished name of
@@ -94,7 +94,7 @@ export type GroupConfig = {
   // Only the scope, filter, attributes, and paged fields are supported.
   options: SearchOptions;
   // JSON paths (on a.b.c form) and hard coded values to set on those paths
-  set?: { path: string; value: JsonValue }[];
+  set?: { [path: string]: JsonValue };
   // Mappings from well known entity fields, to LDAP attribute names
   map: {
     // The name of the attribute that holds the relative distinguished name of
@@ -109,6 +109,15 @@ export type GroupConfig = {
     // The name of the attribute that shall be used for the value of the
     // spec.type field of the entity. Defaults to "groupType".
     type: string;
+    // The name of the attribute that shall be used for the value of the
+    // spec.profile.displayName field of the entity. Defaults to "cn".
+    displayName: string;
+    // The name of the attribute that shall be used for the value of the
+    // spec.profile.email field of the entity.
+    email?: string;
+    // The name of the attribute that shall be used for the value of the
+    // spec.profile.picture field of the entity.
+    picture?: string;
     // The name of the attribute that shall be used for the values of the
     // spec.parent field of the entity. Defaults to "memberOf".
     memberOf: string;
@@ -141,6 +150,7 @@ const defaultConfig = {
       rdn: 'cn',
       name: 'cn',
       description: 'description',
+      displayName: 'cn',
       type: 'groupType',
       memberOf: 'memberOf',
       members: 'member',
@@ -172,22 +182,19 @@ export function readLdapConfig(config: Config): LdapProviderConfig[] {
     }
     return {
       scope: c.getOptionalString('scope') as SearchOptions['scope'],
-      filter: c.getOptionalString('filter'),
+      filter: formatFilter(c.getOptionalString('filter')),
       attributes: c.getOptionalStringArray('attributes'),
       paged: c.getOptionalBoolean('paged'),
     };
   }
 
   function readSetConfig(
-    c: Config[] | undefined,
-  ): { path: string; value: JsonValue }[] | undefined {
+    c: Config | undefined,
+  ): { [path: string]: JsonValue } | undefined {
     if (!c) {
       return undefined;
     }
-    return c.map(entry => ({
-      path: entry.getString('path'),
-      value: entry.get('value'),
-    }));
+    return Object.fromEntries(c.keys().map(path => [path, c.get(path)]));
   }
 
   function readUserMapConfig(
@@ -220,6 +227,9 @@ export function readLdapConfig(config: Config): LdapProviderConfig[] {
       name: c.getOptionalString('name'),
       description: c.getOptionalString('description'),
       type: c.getOptionalString('type'),
+      displayName: c.getOptionalString('displayName'),
+      email: c.getOptionalString('email'),
+      picture: c.getOptionalString('picture'),
       memberOf: c.getOptionalString('memberOf'),
       members: c.getOptionalString('members'),
     };
@@ -231,7 +241,7 @@ export function readLdapConfig(config: Config): LdapProviderConfig[] {
     return {
       dn: c.getString('dn'),
       options: readOptionsConfig(c.getOptionalConfig('options')),
-      set: readSetConfig(c.getOptionalConfigArray('set')),
+      set: readSetConfig(c.getOptionalConfig('set')),
       map: readUserMapConfig(c.getOptionalConfig('map')),
     };
   }
@@ -242,9 +252,14 @@ export function readLdapConfig(config: Config): LdapProviderConfig[] {
     return {
       dn: c.getString('dn'),
       options: readOptionsConfig(c.getOptionalConfig('options')),
-      set: readSetConfig(c.getOptionalConfigArray('set')),
+      set: readSetConfig(c.getOptionalConfig('set')),
       map: readGroupMapConfig(c.getOptionalConfig('map')),
     };
+  }
+
+  function formatFilter(filter?: string): string | undefined {
+    // Remove extra whitespaces between blocks to support multiline filters from the configuration
+    return filter?.replace(/\s*(\(|\))/g, '$1')?.trim();
   }
 
   const providerConfigs = config.getOptionalConfigArray('providers') ?? [];

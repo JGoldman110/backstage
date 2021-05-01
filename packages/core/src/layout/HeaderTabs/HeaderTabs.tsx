@@ -18,7 +18,7 @@
 // This is just a temporary solution to implementing tabs for now
 
 import React, { useState, useEffect } from 'react';
-import { makeStyles, Tabs, Tab } from '@material-ui/core';
+import { makeStyles, Tabs, Tab as TabUI, TabProps } from '@material-ui/core';
 
 const useStyles = makeStyles(theme => ({
   tabsWrapper: {
@@ -41,13 +41,19 @@ const useStyles = makeStyles(theme => ({
 export type Tab = {
   id: string;
   label: string;
+  tabProps?: TabProps<React.ElementType, { component?: React.ElementType }>;
 };
 
-export const HeaderTabs: React.FC<{
+type HeaderTabsProps = {
   tabs: Tab[];
   onChange?: (index: number) => void;
   selectedIndex?: number;
-}> = ({ tabs, onChange, selectedIndex }) => {
+};
+export const HeaderTabs = ({
+  tabs,
+  onChange,
+  selectedIndex,
+}: HeaderTabsProps) => {
   const [selectedTab, setSelectedTab] = useState<number>(selectedIndex ?? 0);
   const styles = useStyles();
 
@@ -76,7 +82,8 @@ export const HeaderTabs: React.FC<{
         value={selectedTab}
       >
         {tabs.map((tab, index) => (
-          <Tab
+          <TabUI
+            {...tab.tabProps}
             label={tab.label}
             key={tab.id}
             value={index}

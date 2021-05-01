@@ -32,9 +32,7 @@ describe('readLdapConfig', () => {
         },
       ],
     };
-    const actual = readLdapConfig(
-      ConfigReader.fromConfigs([{ context: '', data: config }]),
-    );
+    const actual = readLdapConfig(new ConfigReader(config));
     const expected = [
       {
         target: 'target',
@@ -66,6 +64,7 @@ describe('readLdapConfig', () => {
             name: 'cn',
             description: 'description',
             type: 'groupType',
+            displayName: 'cn',
             memberOf: 'memberOf',
             members: 'member',
           },
@@ -89,7 +88,7 @@ describe('readLdapConfig', () => {
               filter: 'f',
               paged: true,
             },
-            set: [{ path: 'p', value: 'v' }],
+            set: { p: 'v' },
             map: {
               rdn: 'u',
               name: 'v',
@@ -108,12 +107,15 @@ describe('readLdapConfig', () => {
               filter: 'f',
               paged: true,
             },
-            set: [{ path: 'p', value: 'v' }],
+            set: { p: 'v' },
             map: {
               rdn: 'u',
               name: 'v',
               description: 'd',
               type: 't',
+              displayName: 'c',
+              email: 'm',
+              picture: 'p',
               memberOf: 'm',
               members: 'n',
             },
@@ -121,9 +123,7 @@ describe('readLdapConfig', () => {
         },
       ],
     };
-    const actual = readLdapConfig(
-      ConfigReader.fromConfigs([{ context: '', data: config }]),
-    );
+    const actual = readLdapConfig(new ConfigReader(config));
     const expected = [
       {
         target: 'target',
@@ -136,7 +136,7 @@ describe('readLdapConfig', () => {
             filter: 'f',
             paged: true,
           },
-          set: [{ path: 'p', value: 'v' }],
+          set: { p: 'v' },
           map: {
             rdn: 'u',
             name: 'v',
@@ -155,12 +155,15 @@ describe('readLdapConfig', () => {
             filter: 'f',
             paged: true,
           },
-          set: [{ path: 'p', value: 'v' }],
+          set: { p: 'v' },
           map: {
             rdn: 'u',
             name: 'v',
             description: 'd',
             type: 't',
+            displayName: 'c',
+            email: 'm',
+            picture: 'p',
             memberOf: 'm',
             members: 'n',
           },
@@ -168,5 +171,36 @@ describe('readLdapConfig', () => {
       },
     ];
     expect(actual).toEqual(expected);
+  });
+
+  it('supports multiline ldap query filter', () => {
+    const config = {
+      providers: [
+        {
+          target: 'target',
+          users: {
+            dn: 'udn',
+            options: {
+              filter: `
+              (|
+                (cn=foo bar)
+                (cn=bar)
+              )
+              `,
+            },
+          },
+          groups: {
+            dn: 'gdn',
+            options: {
+              filter: 'f',
+            },
+          },
+        },
+      ],
+    };
+    const actual = readLdapConfig(new ConfigReader(config));
+
+    const expected = '(|(cn=foo bar)(cn=bar))';
+    expect(actual[0].users.options.filter).toEqual(expected);
   });
 });

@@ -14,32 +14,17 @@
  * limitations under the License.
  */
 import { errorApiRef, useApi } from '@backstage/core';
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useAsyncRetry } from 'react-use';
 import { jenkinsApiRef } from '../api';
 
-export function useBuilds(owner: string, repo: string, branch?: string) {
+export function useBuilds(projectName: string, branch?: string) {
   const api = useApi(jenkinsApiRef);
   const errorApi = useApi(errorApiRef);
 
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(5);
-
-  const getBuilds = useCallback(async () => {
-    try {
-      let build;
-      if (branch) {
-        build = await api.getLastBuild(`${owner}/${repo}/${branch}`);
-      } else {
-        build = await api.getFolder(`${owner}/${repo}`);
-      }
-      return build;
-    } catch (e) {
-      errorApi.post(e);
-      return Promise.reject(e);
-    }
-  }, [api, branch, errorApi, owner, repo]);
 
   const restartBuild = async (buildName: string) => {
     try {
@@ -49,20 +34,25 @@ export function useBuilds(owner: string, repo: string, branch?: string) {
     }
   };
 
-  useEffect(() => {
-    getBuilds().then(b => {
-      const size = Array.isArray(b) ? b?.[0].build_num! : 1;
+  const { loading, value: builds, retry } = useAsyncRetry(async () => {
+    try {
+      let build;
+      if (branch) {
+        build = await api.getLastBuild(`${projectName}/${branch}`);
+      } else {
+        build = await api.getFolder(`${projectName}`);
+      }
+
+      const size = Array.isArray(build) ? build?.[0].build_num! : 1;
       setTotal(size);
-    });
-  }, [repo, getBuilds]);
 
-  const { loading, value: builds, retry } = useAsyncRetry(
-    () =>
-      getBuilds().then(retrievedBuilds => retrievedBuilds ?? [], restartBuild),
-    [page, pageSize, getBuilds],
-  );
+      return build || [];
+    } catch (e) {
+      errorApi.post(e);
+      throw e;
+    }
+  }, [api, errorApi, projectName, branch]);
 
-  const projectName = `${owner}/${repo}`;
   return [
     {
       page,

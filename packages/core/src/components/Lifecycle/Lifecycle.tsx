@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import React, { FC } from 'react';
+import React from 'react';
 import CSS from 'csstype';
 import { makeStyles } from '@material-ui/core';
 
@@ -25,7 +25,7 @@ type Props = CSS.Properties & {
 
 const useStyles = makeStyles({
   alpha: {
-    color: '#d00150',
+    color: '#ffffff',
     fontFamily: 'serif',
     fontWeight: 'normal',
     fontStyle: 'italic',
@@ -38,7 +38,7 @@ const useStyles = makeStyles({
   },
 });
 
-export const Lifecycle: FC<Props> = props => {
+export const Lifecycle = (props: Props) => {
   const classes = useStyles(props);
   const { shorthand, alpha } = props;
   return shorthand ? (

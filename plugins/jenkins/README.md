@@ -14,11 +14,22 @@ Website: [https://jenkins.io/](https://jenkins.io/)
 yarn add @backstage/plugin-jenkins
 ```
 
-2. Add plugin:
+2. Add the `EntityJenkinsContent` extension to the entity page in the app:
 
-```js
-// packages/app/src/plugins.ts
-export { plugin as Jenkins } from '@backstage/plugin-jenkins';
+```tsx
+// packages/app/src/components/catalog/EntityPage.tsx
+import { EntityJenkinsContent } from '@backstage/plugin-circleci';
+
+// ...
+const serviceEntityPage = (
+  <EntityPageLayout>
+    ...
+    <EntityLayout.Route path="/jenkins" title="Jenkins">
+      <EntityJenkinsContent />
+    </EntityLayout.Route>
+    ...
+  </EntityPageLayout>
+);
 ```
 
 3. Add proxy configuration to `app-config.yaml`
@@ -29,19 +40,17 @@ proxy:
     target: 'http://localhost:8080' # your Jenkins URL
     changeOrigin: true
     headers:
-      Authorization:
-        $env: JENKINS_BASIC_AUTH_HEADER
+      Authorization: Basic ${JENKINS_BASIC_AUTH_HEADER}
 ```
 
 4. Add an environment variable which contains the Jenkins credentials, (note: use an API token not your password). Here user is the name of the user created in Jenkins.
 
 ```shell
-HEADER=$(echo -n user:api-token | base64)
-export JENKINS_BASIC_AUTH_HEADER="Basic $HEADER"
+export JENKINS_BASIC_AUTH_HEADER=$(echo -n user:api-token | base64)
 ```
 
 5. Run app with `yarn start`
-6. Add the Jenkins folder annotation to your `component-info.yaml`, (note: currently this plugin only supports folders and Git SCM)
+6. Add the Jenkins folder annotation to your `catalog-info.yaml`, (note: currently this plugin only supports folders and Git SCM)
 
 ```yaml
 apiVersion: backstage.io/v1alpha1
@@ -50,7 +59,7 @@ metadata:
   name: 'your-component'
   description: 'a description'
   annotations:
-    jenkins.io/github-folder: 'folder-name/job-name'
+    jenkins.io/github-folder: 'folder-name/project-name'
 spec:
   type: service
   lifecycle: experimental
@@ -84,6 +93,5 @@ YWRtaW46MTFlYzI1NmU0Mzg1MDFjM2Y1Yzc2Yjc1MWE3ZTQ3YWY4Mw== is the base64 of user a
 
 ## Limitations
 
-- Only works with projects that use the Git SCM
-- It requires jobs to be organised into folders
-- No pagination support currently - don't run this on a Jenkins with lots of builds
+- Only works with organization folder projects backed by GitHub
+- No pagination support currently, limited to 50 projects - don't run this on a Jenkins with lots of builds

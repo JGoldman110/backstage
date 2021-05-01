@@ -14,37 +14,53 @@
  * limitations under the License.
  */
 import { Entity } from '@backstage/catalog-model';
-import { errorApiRef, useApi } from '@backstage/core-api';
+import {
+  configApiRef,
+  errorApiRef,
+  InfoCard,
+  InfoCardVariants,
+  Link,
+  Table,
+  useApi,
+} from '@backstage/core';
+import { readGitHubIntegrationConfigs } from '@backstage/integration';
+import { useEntity } from '@backstage/plugin-catalog-react';
+import React, { useEffect } from 'react';
+import { generatePath, Link as RouterLink } from 'react-router-dom';
 import { GITHUB_ACTIONS_ANNOTATION } from '../useProjectName';
 import { useWorkflowRuns } from '../useWorkflowRuns';
-import React, { useEffect } from 'react';
-import { EmptyState, InfoCard, Table } from '@backstage/core';
 import { WorkflowRunStatus } from '../WorkflowRunStatus';
-import { Button, Link } from '@material-ui/core';
-import { generatePath, Link as RouterLink } from 'react-router-dom';
+import { Typography } from '@material-ui/core';
 
 const firstLine = (message: string): string => message.split('\n')[0];
 
 export type Props = {
-  entity: Entity;
+  /** @deprecated The entity is now grabbed from context instead */
+  entity?: Entity;
   branch?: string;
   dense?: boolean;
   limit?: number;
-  variant?: string;
+  variant?: InfoCardVariants;
 };
 
 export const RecentWorkflowRunsCard = ({
-  entity,
   branch,
   dense = false,
   limit = 5,
   variant,
 }: Props) => {
+  const { entity } = useEntity();
+  const config = useApi(configApiRef);
   const errorApi = useApi(errorApiRef);
+  // TODO: Get github hostname from metadata annotation
+  const hostname = readGitHubIntegrationConfigs(
+    config.getOptionalConfigArray('integrations.github') ?? [],
+  )[0].host;
   const [owner, repo] = (
     entity?.metadata.annotations?.[GITHUB_ACTIONS_ANNOTATION] ?? '/'
   ).split('/');
   const [{ runs = [], loading, error }] = useWorkflowRuns({
+    hostname,
     owner,
     repo,
     branch,
@@ -56,54 +72,55 @@ export const RecentWorkflowRunsCard = ({
     }
   }, [error, errorApi]);
 
-  return !runs.length ? (
-    <EmptyState
-      missing="data"
-      title="No Workflow Data"
-      description="This component has Github Actions enabled, but no data was found. Have you created any Workflows? Click the button below to create a new Workflow."
-      action={
-        <Button
-          variant="contained"
-          color="primary"
-          href={`https://github.com/${owner}/${repo}/actions/new`}
-        >
-          Create new Workflow
-        </Button>
-      }
-    />
-  ) : (
+  const githubHost = hostname || 'github.com';
+
+  return (
     <InfoCard
       title="Recent Workflow Runs"
       subheader={branch ? `Branch: ${branch}` : 'All Branches'}
       noPadding
       variant={variant}
     >
-      <Table
-        isLoading={loading}
-        options={{
-          search: false,
-          paging: false,
-          padding: dense ? 'dense' : 'default',
-          toolbar: false,
-        }}
-        columns={[
-          {
-            title: 'Commit Message',
-            field: 'message',
-            render: data => (
-              <Link
-                component={RouterLink}
-                to={generatePath('./ci-cd/:id', { id: data.id! })}
-              >
-                {firstLine(data.message)}
-              </Link>
-            ),
-          },
-          { title: 'Branch', field: 'source.branchName' },
-          { title: 'Status', field: 'status', render: WorkflowRunStatus },
-        ]}
-        data={runs}
-      />
+      {!runs.length ? (
+        <div style={{ textAlign: 'center' }}>
+          <Typography variant="body1">
+            This component has GitHub Actions enabled, but no workflows were
+            found.
+          </Typography>
+          <Typography variant="body2">
+            <Link to={`https://${githubHost}/${owner}/${repo}/actions/new`}>
+              Create a new workflow
+            </Link>
+          </Typography>
+        </div>
+      ) : (
+        <Table
+          isLoading={loading}
+          options={{
+            search: false,
+            paging: false,
+            padding: dense ? 'dense' : 'default',
+            toolbar: false,
+          }}
+          columns={[
+            {
+              title: 'Commit Message',
+              field: 'message',
+              render: data => (
+                <Link
+                  component={RouterLink}
+                  to={generatePath('./ci-cd/:id', { id: data.id! })}
+                >
+                  {firstLine(data.message)}
+                </Link>
+              ),
+            },
+            { title: 'Branch', field: 'source.branchName' },
+            { title: 'Status', field: 'status', render: WorkflowRunStatus },
+          ]}
+          data={runs}
+        />
+      )}
     </InfoCard>
   );
 };

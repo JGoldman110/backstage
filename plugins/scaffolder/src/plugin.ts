@@ -15,26 +15,41 @@
  */
 
 import {
-  createPlugin,
   createApiFactory,
+  createPlugin,
+  createRoutableExtension,
   discoveryApiRef,
+  identityApiRef,
 } from '@backstage/core';
-import { ScaffolderPage } from './components/ScaffolderPage';
-import { TemplatePage } from './components/TemplatePage';
-import { rootRoute, templateRoute } from './routes';
-import { scaffolderApiRef, ScaffolderApi } from './api';
+import { scmIntegrationsApiRef } from '@backstage/integration-react';
+import { scaffolderApiRef, ScaffolderClient } from './api';
+import { rootRouteRef, registerComponentRouteRef } from './routes';
 
-export const plugin = createPlugin({
+export const scaffolderPlugin = createPlugin({
   id: 'scaffolder',
   apis: [
     createApiFactory({
       api: scaffolderApiRef,
-      deps: { discoveryApi: discoveryApiRef },
-      factory: ({ discoveryApi }) => new ScaffolderApi({ discoveryApi }),
+      deps: {
+        discoveryApi: discoveryApiRef,
+        identityApi: identityApiRef,
+        scmIntegrationsApi: scmIntegrationsApiRef,
+      },
+      factory: ({ discoveryApi, identityApi, scmIntegrationsApi }) =>
+        new ScaffolderClient({ discoveryApi, identityApi, scmIntegrationsApi }),
     }),
   ],
-  register({ router }) {
-    router.addRoute(rootRoute, ScaffolderPage);
-    router.addRoute(templateRoute, TemplatePage);
+  routes: {
+    root: rootRouteRef,
+  },
+  externalRoutes: {
+    registerComponent: registerComponentRouteRef,
   },
 });
+
+export const ScaffolderPage = scaffolderPlugin.provide(
+  createRoutableExtension({
+    component: () => import('./components/Router').then(m => m.Router),
+    mountPoint: rootRouteRef,
+  }),
+);

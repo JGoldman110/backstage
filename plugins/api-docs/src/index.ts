@@ -14,5 +14,16 @@
  * limitations under the License.
  */
 
-export { Router } from './catalog';
-export { plugin } from './plugin';
+export * from './components';
+export { apiDocsConfigRef } from './config';
+export {
+  apiDocsPlugin,
+  apiDocsPlugin as plugin,
+  ApiExplorerPage,
+  EntityApiDefinitionCard,
+  EntityConsumedApisCard,
+  EntityConsumingComponentsCard,
+  EntityHasApisCard,
+  EntityProvidedApisCard,
+  EntityProvidingComponentsCard,
+} from './plugin';

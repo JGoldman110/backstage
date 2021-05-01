@@ -13,42 +13,45 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Button } from '@backstage/core';
+import { Button, ItemCardHeader, useRouteRef } from '@backstage/core';
 import { BackstageTheme, pageTheme } from '@backstage/theme';
 import {
+  Box,
   Card,
+  CardActions,
+  CardContent,
+  CardMedia,
   Chip,
   makeStyles,
-  Typography,
   useTheme,
 } from '@material-ui/core';
 import React from 'react';
-import { generatePath } from 'react-router-dom';
-import { templateRoute } from '../../routes';
+import { generatePath } from 'react-router';
+import { rootRouteRef } from '../../routes';
+import { TemplateEntityV1alpha1 } from '@backstage/catalog-model';
+import { FavouriteTemplate } from '../FavouriteTemplate/FavouriteTemplate';
 
-const useStyles = makeStyles(theme => ({
-  header: {
-    color: theme.palette.common.white,
-    padding: theme.spacing(2, 2, 6),
-    backgroundImage: (props: { backgroundImage: string }) =>
-      props.backgroundImage,
-    backgroundPosition: 0,
+const useStyles = makeStyles({
+  cardHeader: {
+    position: 'relative',
   },
-  content: {
-    padding: theme.spacing(2),
+  title: {
+    backgroundImage: ({ backgroundImage }: any) => backgroundImage,
   },
   description: {
-    height: 175,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
+    display: '-webkit-box',
+    '-webkit-line-clamp': 10,
+    '-webkit-box-orient': 'vertical',
   },
-  footer: {
-    display: 'flex',
-    flexDirection: 'row-reverse',
-  },
-}));
+});
 
 export type TemplateCardProps = {
+  template: TemplateEntityV1alpha1;
+};
+
+type TemplateProps = {
   description: string;
   tags: string[];
   title: string;
@@ -56,39 +59,58 @@ export type TemplateCardProps = {
   name: string;
 };
 
-export const TemplateCard = ({
-  description,
-  tags,
-  title,
-  type,
-  name,
-}: TemplateCardProps) => {
-  const backstageTheme = useTheme<BackstageTheme>();
+const getTemplateCardProps = (
+  template: TemplateEntityV1alpha1,
+): TemplateProps & { key: string } => {
+  return {
+    key: template.metadata.uid!,
+    name: template.metadata.name,
+    title: `${(template.metadata.title || template.metadata.name) ?? ''}`,
+    type: template.spec.type ?? '',
+    description: template.metadata.description ?? '-',
+    tags: (template.metadata?.tags as string[]) ?? [],
+  };
+};
 
-  const themeId = pageTheme[type] ? type : 'other';
+export const TemplateCard = ({ template }: TemplateCardProps) => {
+  const backstageTheme = useTheme<BackstageTheme>();
+  const rootLink = useRouteRef(rootRouteRef);
+  const templateProps = getTemplateCardProps(template);
+
+  const themeId = pageTheme[templateProps.type] ? templateProps.type : 'other';
   const theme = backstageTheme.getPageTheme({ themeId });
   const classes = useStyles({ backgroundImage: theme.backgroundImage });
-  const href = generatePath(templateRoute.path, { templateName: name });
+  const href = generatePath(`${rootLink()}/templates/:templateName`, {
+    templateName: templateProps.name,
+  });
 
   return (
     <Card>
-      <div className={classes.header}>
-        <Typography variant="subtitle2">{type}</Typography>
-        <Typography variant="h6">{title}</Typography>
-      </div>
-      <div className={classes.content}>
-        {tags?.map(tag => (
-          <Chip label={tag} key={tag} />
-        ))}
-        <Typography variant="body2" paragraph className={classes.description}>
-          {description}
-        </Typography>
-        <div className={classes.footer}>
-          <Button color="primary" to={href}>
-            Choose
-          </Button>
-        </div>
-      </div>
+      <CardMedia className={classes.cardHeader}>
+        <FavouriteTemplate entity={template} />
+        <ItemCardHeader
+          title={templateProps.title}
+          subtitle={templateProps.type}
+          classes={{ root: classes.title }}
+        />
+      </CardMedia>
+      <CardContent>
+        <Box>
+          {templateProps.tags?.map(tag => (
+            <Chip size="small" label={tag} key={tag} />
+          ))}
+        </Box>
+        <Box className={classes.description}>{templateProps.description}</Box>
+      </CardContent>
+      <CardActions>
+        <Button
+          color="primary"
+          to={href}
+          aria-label={`Choose ${templateProps.title} `}
+        >
+          Choose
+        </Button>
+      </CardActions>
     </Card>
   );
 };

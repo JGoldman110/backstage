@@ -14,11 +14,15 @@
  * limitations under the License.
  */
 
-import { Entity, LocationSpec } from '@backstage/catalog-model';
+import {
+  Entity,
+  LocationSpec,
+  stringifyLocationReference,
+} from '@backstage/catalog-model';
 import lodash from 'lodash';
 import yaml from 'yaml';
 import * as result from '../results';
-import { CatalogProcessorResult } from '../types';
+import { CatalogProcessorParser, CatalogProcessorResult } from '../types';
 
 export function* parseEntityYaml(
   data: Buffer,
@@ -28,18 +32,24 @@ export function* parseEntityYaml(
   try {
     documents = yaml.parseAllDocuments(data.toString('utf8')).filter(d => d);
   } catch (e) {
-    yield result.generalError(location, `Failed to parse YAML, ${e}`);
+    const loc = stringifyLocationReference(location);
+    const message = `Failed to parse YAML at ${loc}, ${e}`;
+    yield result.generalError(location, message);
     return;
   }
 
   for (const document of documents) {
     if (document.errors?.length) {
-      const message = `YAML error, ${document.errors[0]}`;
+      const loc = stringifyLocationReference(location);
+      const message = `YAML error at ${loc}, ${document.errors[0]}`;
       yield result.generalError(location, message);
     } else {
       const json = document.toJSON();
       if (lodash.isPlainObject(json)) {
         yield result.entity(location, json as Entity);
+      } else if (json === null) {
+        // Ignore null values, these happen if there is an empty document in the
+        // YAML file, for example if --- is added to the end of the file.
       } else {
         const message = `Expected object at root, got ${typeof json}`;
         yield result.generalError(location, message);
@@ -47,3 +57,12 @@ export function* parseEntityYaml(
     }
   }
 }
+
+export const defaultEntityDataParser: CatalogProcessorParser = async function* defaultEntityDataParser({
+  data,
+  location,
+}) {
+  for (const e of parseEntityYaml(data, location)) {
+    yield e;
+  }
+};

@@ -17,7 +17,7 @@ import React from 'react';
 import { TechDocsPage } from './TechDocsPage';
 import { render, act } from '@testing-library/react';
 import { wrapInTestApp } from '@backstage/test-utils';
-import { ApiRegistry, ApiProvider } from '@backstage/core-api';
+import { ApiRegistry, ApiProvider } from '@backstage/core';
 import {
   techdocsApiRef,
   TechDocsApi,
@@ -50,17 +50,30 @@ describe('<TechDocsPage />', () => {
       entityId: 'Component::backstage',
     });
 
-    const techDocsApi: Partial<TechDocsApi> = {
-      getMetadata: () => Promise.resolve([]),
+    const techdocsApi: Partial<TechDocsApi> = {
+      getEntityMetadata: () =>
+        Promise.resolve({
+          apiVersion: 'v1',
+          kind: 'Component',
+          metadata: {
+            name: 'backstage',
+          },
+        }),
+      getTechDocsMetadata: () =>
+        Promise.resolve({
+          site_name: 'string',
+          site_description: 'string',
+        }),
     };
-    const techDocsStorageApi: Partial<TechDocsStorageApi> = {
+    const techdocsStorageApi: Partial<TechDocsStorageApi> = {
       getEntityDocs: (): Promise<string> => Promise.resolve('String'),
-      getBaseUrl: (): string => '',
+      getBaseUrl: (): Promise<string> => Promise.resolve('String'),
+      getApiOrigin: (): Promise<string> => Promise.resolve('String'),
     };
 
     const apiRegistry = ApiRegistry.from([
-      [techdocsApiRef, techDocsApi],
-      [techdocsStorageApiRef, techDocsStorageApi],
+      [techdocsApiRef, techdocsApi],
+      [techdocsStorageApiRef, techdocsStorageApi],
     ]);
 
     await act(async () => {

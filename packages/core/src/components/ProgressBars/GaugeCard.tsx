@@ -14,18 +14,19 @@
  * limitations under the License.
  */
 
-import React, { FC } from 'react';
+import React from 'react';
 import { makeStyles } from '@material-ui/core';
-import { InfoCard } from '../../layout/InfoCard';
+import { InfoCard, InfoCardVariants } from '../../layout/InfoCard';
 import { BottomLinkProps } from '../../layout/BottomLink';
 import { Gauge } from './Gauge';
 
 type Props = {
   title: string;
   subheader?: string;
-  variant?: string;
+  variant?: InfoCardVariants;
   /** Progress in % specified as decimal, e.g. "0.23" */
   progress: number;
+  inverse?: boolean;
   deepLink?: BottomLinkProps;
 };
 
@@ -36,9 +37,9 @@ const useStyles = makeStyles({
   },
 });
 
-export const GaugeCard: FC<Props> = props => {
+export const GaugeCard = (props: Props) => {
   const classes = useStyles(props);
-  const { title, subheader, progress, deepLink, variant } = props;
+  const { title, subheader, progress, inverse, deepLink, variant } = props;
 
   return (
     <div className={classes.root}>
@@ -48,7 +49,7 @@ export const GaugeCard: FC<Props> = props => {
         deepLink={deepLink}
         variant={variant}
       >
-        <Gauge value={progress} />
+        <Gauge value={progress} inverse={inverse} />
       </InfoCard>
     </div>
   );

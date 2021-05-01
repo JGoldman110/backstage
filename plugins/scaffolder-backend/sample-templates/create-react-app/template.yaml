@@ -18,6 +18,8 @@ spec:
     required: 
       - component_id
       - use_typescript
+      - description
+      - collaborators
     properties:
       component_id:
         title: Name
@@ -29,7 +31,37 @@ spec:
         type: string
         description: Help others understand what this website is for.
       use_typescript:
-        title:  Use Typescript
+        title:  Use TypeScript
         type: boolean
-        description: Include typescript
+        description: Include TypeScript
         default: true
+      use_github_actions:
+        title:  Use Github Actions workflows to build this component
+        type: boolean
+        description: Use Github Actions
+        default: true
+      collaborators:
+        title: Collaborators
+        description: Provide users with permissions
+        type: array
+        ui:options:
+          orderable: false
+        items:
+          type: object
+          required:
+          - username
+          - access
+          properties:
+            access:
+              type: string
+              description: The type of access for the user
+              default: pull
+              enum:
+              - push
+              - pull
+              - admin
+              - maintain
+              - triage
+            username:
+              type: string
+              description: The username or group

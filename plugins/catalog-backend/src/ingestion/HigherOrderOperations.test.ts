@@ -360,7 +360,10 @@ describe('HigherOrderOperations', () => {
         entities: [{ entity: desc, location, relations: [] }],
         errors: [],
       });
-      entitiesCatalog.entities.mockResolvedValue([]);
+      entitiesCatalog.entities.mockResolvedValue({
+        entities: [],
+        pageInfo: { hasNextPage: false },
+      });
       entitiesCatalog.batchAddOrUpdateEntities.mockResolvedValue([]);
 
       await expect(
@@ -372,10 +375,9 @@ describe('HigherOrderOperations', () => {
         '123',
         undefined,
       );
-      expect(locationsCatalog.logUpdateSuccess).toHaveBeenCalledWith(
-        '123',
+      expect(locationsCatalog.logUpdateSuccess).toHaveBeenCalledWith('123', [
         'c1',
-      );
+      ]);
     });
 
     it('logs unsuccessful updates when reader fails', async () => {

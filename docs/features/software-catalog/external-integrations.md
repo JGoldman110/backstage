@@ -1,8 +1,8 @@
 ---
 id: external-integrations
 title: External integrations
-description: Documentation on External integrations to integrate systems
-with Backstage
+# prettier-ignore
+description: Documentation on External integrations to integrate systems with Backstage
 ---
 
 Backstage natively supports importing catalog data through the use of
@@ -94,7 +94,7 @@ The recommended way of instantiating the catalog backend classes is to use the
 as illustrated in the
 [example backend here](https://github.com/backstage/backstage/blob/master/packages/backend/src/plugins/catalog.ts).
 We will create a new
-[`CatalogProcessor`](https://github.com/backstage/backstage/blob/master/plugins/catalog-backend/src/ingestion/types.ts)
+[`CatalogProcessor`](https://github.com/backstage/backstage/blob/master/plugins/catalog-backend/src/ingestion/processors/types.ts)
 subclass that can be added to this catalog builder.
 
 It is up to you where you put the code for this new processor class. For quick
@@ -156,8 +156,18 @@ The key points to note are:
 - Call `emit` any number of times with the results of that process
 - Finally return `true`
 
-You should now be able to instantiate this class in your backend, and add it to
-the `CatalogBuilder` using the `addProcessors` method.
+You should now be able to add this class to your backend in
+`packages/backend/src/plugins/catalog.ts`:
+
+```diff
++ import { SystemXReaderProcessor } from '../path/to/class';
+
+export default async function createPlugin(
+  env: PluginEnvironment,
+): Promise<Router> {
+  const builder = new CatalogBuilder(env);
++  builder.addProcessor(new SystemXReaderProcessor(env.reader));
+```
 
 Start up the backend - it should now start reading from the previously
 registered location and you'll see your entities start to appear in Backstage.

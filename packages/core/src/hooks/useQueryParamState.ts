@@ -14,8 +14,9 @@
  * limitations under the License.
  */
 
+import { isEqual } from 'lodash';
 import qs from 'qs';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDebounce } from 'react-use';
 
@@ -57,12 +58,21 @@ type SetQueryParams<T> = (params: T) => void;
 
 export function useQueryParamState<T>(
   stateName: string,
+  debounceTime: number = 100,
 ): [T | undefined, SetQueryParams<T>] {
   const navigate = useNavigate();
   const location = useLocation();
   const [queryParamState, setQueryParamState] = useState<T>(
     extractState(location.search, stateName),
   );
+
+  useEffect(() => {
+    const newState = extractState(location.search, stateName);
+
+    setQueryParamState(oldState =>
+      isEqual(newState, oldState) ? oldState : newState,
+    );
+  }, [location, stateName]);
 
   useDebounce(
     () => {
@@ -76,7 +86,7 @@ export function useQueryParamState<T>(
         navigate({ ...location, search: `?${queryString}` }, { replace: true });
       }
     },
-    100,
+    debounceTime,
     [queryParamState],
   );
 

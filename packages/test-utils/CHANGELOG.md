@@ -1,5 +1,84 @@
 # @backstage/test-utils
 
+## 0.1.10
+
+### Patch Changes
+
+- ae6250ce3: Remove unnecessary wrapping of elements rendered by `wrapInTestApp` and `renderInTestApp`, which was breaking mount discovery.
+- Updated dependencies [1279a3325]
+- Updated dependencies [4a4681b1b]
+- Updated dependencies [b051e770c]
+  - @backstage/core-api@0.2.16
+
+## 0.1.9
+
+### Patch Changes
+
+- 4e0b5055a: Allow `ExternalRouteRef` bindings in `mountedRoutes` to work with the latest version of core-api.
+- Updated dependencies [a51dc0006]
+- Updated dependencies [e7f9b9435]
+- Updated dependencies [34ff49b0f]
+- Updated dependencies [d88dd219e]
+- Updated dependencies [c8b54c370]
+  - @backstage/core-api@0.2.14
+
+## 0.1.8
+
+### Patch Changes
+
+- dc12852c9: Allow `ExternalRouteRef` instances to be passed as a route ref to `mountedRoutes`.
+- Updated dependencies [3a58084b6]
+- Updated dependencies [1407b34c6]
+- Updated dependencies [b6c4f485d]
+- Updated dependencies [3a58084b6]
+  - @backstage/core-api@0.2.11
+
+## 0.1.7
+
+### Patch Changes
+
+- b51ee6ece: Added `mountedRoutes` option to `wrapInTestApp`, allowing routes to be associated to concrete paths to make `useRouteRef` usable in tested components.
+
+## 0.1.6
+
+### Patch Changes
+
+- 1dc445e89: Update to use new plugin extension API
+- Updated dependencies [d681db2b5]
+- Updated dependencies [1dc445e89]
+  - @backstage/core-api@0.2.7
+
+## 0.1.5
+
+### Patch Changes
+
+- e1f4e24ef: Fix @backstage/cli not being a devDependency
+- Updated dependencies [b6557c098]
+- Updated dependencies [d8d5a17da]
+- Updated dependencies [1665ae8bb]
+  - @backstage/core-api@0.2.5
+  - @backstage/theme@0.2.2
+
+## 0.1.4
+
+### Patch Changes
+
+- Updated dependencies [b4488ddb0]
+- Updated dependencies [4a655c89d]
+- Updated dependencies [8a16e8af8]
+- Updated dependencies [00670a96e]
+  - @backstage/cli@0.4.0
+  - @backstage/core-api@0.2.4
+
+## 0.1.3
+
+### Patch Changes
+
+- Updated dependencies [1722cb53c]
+- Updated dependencies [1722cb53c]
+- Updated dependencies [902340451]
+  - @backstage/cli@0.3.0
+
 ## 0.1.2
 
 ### Patch Changes

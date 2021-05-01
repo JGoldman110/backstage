@@ -17,9 +17,10 @@
 import { getVoidLogger, UrlReader } from '@backstage/backend-common';
 import { Entity } from '@backstage/catalog-model';
 import { ConfigReader } from '@backstage/config';
-import Knex from 'knex';
+import { Knex } from 'knex';
 import yaml from 'yaml';
 import { DatabaseManager } from '../database';
+import { CatalogProcessorParser } from '../ingestion';
 import * as result from '../ingestion/processors/results';
 import { CatalogBuilder, CatalogEnvironment } from './CatalogBuilder';
 
@@ -43,11 +44,12 @@ describe('CatalogBuilder', () => {
   const reader: jest.Mocked<UrlReader> = {
     read: jest.fn(),
     readTree: jest.fn(),
+    search: jest.fn(),
   };
   const env: CatalogEnvironment = {
     logger: getVoidLogger(),
     database: { getClient: async () => db },
-    config: ConfigReader.fromConfigs([]),
+    config: new ConfigReader({}),
     reader,
   };
 
@@ -59,7 +61,10 @@ describe('CatalogBuilder', () => {
   it('works with no changes', async () => {
     const builder = new CatalogBuilder(env);
     const built = await builder.build();
-    await expect(built.entitiesCatalog.entities()).resolves.toEqual([]);
+    await expect(built.entitiesCatalog.entities()).resolves.toEqual({
+      entities: [],
+      pageInfo: { hasNextPage: false },
+    });
     await expect(built.locationsCatalog.locations()).resolves.toEqual([
       expect.objectContaining({
         data: expect.objectContaining({ type: 'bootstrap' }),
@@ -144,7 +149,7 @@ describe('CatalogBuilder', () => {
           owner: 'o',
           lifecycle: 'l',
         },
-        relations: [],
+        relations: expect.anything(),
       },
     ]);
   });
@@ -164,7 +169,7 @@ describe('CatalogBuilder', () => {
       type: 'github',
       target: 'https://github.com/a/b/x.yaml',
     });
-    const entities = await entitiesCatalog.entities();
+    const { entities } = await entitiesCatalog.entities();
 
     expect(entities).toEqual([
       expect.objectContaining({
@@ -198,7 +203,7 @@ describe('CatalogBuilder', () => {
       type: 'x',
       target: 'y',
     });
-    const entities = await entitiesCatalog.entities();
+    const { entities } = await entitiesCatalog.entities();
 
     expect.assertions(3);
     expect(entities).toEqual([
@@ -208,5 +213,27 @@ describe('CatalogBuilder', () => {
         }),
       }),
     ]);
+  });
+
+  it('setEntityDataParser works', async () => {
+    const mockParser: CatalogProcessorParser = jest
+      .fn()
+      .mockImplementation(() => {});
+
+    const builder = new CatalogBuilder(env)
+      .setEntityDataParser(mockParser)
+      .replaceProcessors([
+        {
+          async readLocation(_location, _optional, _emit, parser) {
+            expect(parser).toBe(mockParser);
+            return true;
+          },
+        },
+      ]);
+
+    const { higherOrderOperation } = await builder.build();
+    await higherOrderOperation.addLocation({ type: 'x', target: 'y' });
+
+    expect.assertions(1);
   });
 });

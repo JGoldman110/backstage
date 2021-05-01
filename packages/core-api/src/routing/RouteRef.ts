@@ -15,43 +15,37 @@
  */
 
 import {
-  ConcreteRoute,
-  routeReference,
-  ReferencedRoute,
-  resolveRoute,
-  RouteRefConfig,
+  RouteRef,
+  SubRouteRef,
+  ExternalRouteRef,
+  routeRefType,
+  AnyParams,
+  ParamKeys,
+  OptionalParams,
 } from './types';
-import { generatePath } from 'react-router-dom';
+import { IconComponent } from '../icons';
 
-type SubRouteConfig = {
-  path: string;
+// TODO(Rugvip): Remove this in the next breaking release, it's exported but unused
+export type RouteRefConfig<Params extends AnyParams> = {
+  params?: ParamKeys<Params>;
+  path?: string;
+  icon?: IconComponent;
+  title: string;
 };
 
-export class SubRouteRef<T extends { [name in string]: string } | never = never>
-  implements ReferencedRoute {
+export class RouteRefImpl<Params extends AnyParams>
+  implements RouteRef<Params> {
+  readonly [routeRefType] = 'absolute';
+
   constructor(
-    private readonly parent: ConcreteRoute,
-    private readonly config: SubRouteConfig,
+    private readonly id: string,
+    readonly params: ParamKeys<Params>,
+    private readonly config: {
+      path?: string;
+      icon?: IconComponent;
+      title?: string;
+    },
   ) {}
-
-  get [routeReference]() {
-    return this;
-  }
-
-  link<Args extends T extends never ? [] : [T]>(...args: Args): ConcreteRoute {
-    return {
-      [routeReference]: this,
-      [resolveRoute]: (path: string) => {
-        const ownPart = generatePath(this.config.path, args[0] ?? {});
-        const parentPart = this.parent[resolveRoute](path);
-        return parentPart + ownPart;
-      },
-    };
-  }
-}
-
-export class AbsoluteRouteRef implements ConcreteRoute {
-  constructor(private readonly config: RouteRefConfig) {}
 
   get icon() {
     return this.config.icon;
@@ -59,33 +53,54 @@ export class AbsoluteRouteRef implements ConcreteRoute {
 
   // TODO(Rugvip): Remove this, routes are looked up via the registry instead
   get path() {
-    return this.config.path;
+    return this.config.path ?? '';
   }
 
   get title() {
-    return this.config.title;
+    return this.config.title ?? this.id;
   }
 
-  createSubRoute<T extends { [name in string]: string } | never = never>(
-    config: SubRouteConfig,
-  ) {
-    return new SubRouteRef<T>(this, config);
-  }
-
-  get [routeReference]() {
-    return this;
-  }
-
-  [resolveRoute](path: string) {
-    return path;
+  toString() {
+    return `routeRef{type=absolute,id=${this.id}}`;
   }
 }
 
-export function createRouteRef(config: RouteRefConfig): AbsoluteRouteRef {
-  return new AbsoluteRouteRef(config);
+export function createRouteRef<
+  // Params is the type that we care about and the one to be embedded in the route ref.
+  // For example, given the params ['name', 'kind'], Params will be {name: string, kind: string}
+  Params extends { [param in ParamKey]: string },
+  // ParamKey is here to make sure the Params type properly has its keys narrowed down
+  // to only the elements of params. Defaulting to never makes sure we end up with
+  // Param = {} if the params array is empty.
+  ParamKey extends string = never
+>(config: {
+  /** The id of the route ref, used to identify it when printed */
+  id?: string;
+  /** A list of parameter names that the path that this route ref is bound to must contain */
+  params?: ParamKey[];
+  /** @deprecated Route refs no longer decide their own path */
+  path?: string;
+  /** @deprecated Route refs no longer decide their own icon */
+  icon?: IconComponent;
+  /** @deprecated Route refs no longer decide their own title */
+  title?: string;
+}): RouteRef<OptionalParams<Params>> {
+  const id = config.id || config.title;
+  if (!id) {
+    throw new Error('RouteRef must be provided a non-empty id');
+  }
+  return new RouteRefImpl(
+    id,
+    (config.params ?? []) as ParamKeys<OptionalParams<Params>>,
+    config,
+  );
 }
 
-// TODO(Rugvip): Added for backwards compatibility, remove once old usage is gone
-// We may want to avoid exporting the AbsoluteRouteRef itself though, and consider
-// a different model for how to create sub routes, just avoid this
-export type MutableRouteRef = AbsoluteRouteRef;
+export function isRouteRef<Params extends AnyParams>(
+  routeRef:
+    | RouteRef<Params>
+    | SubRouteRef<Params>
+    | ExternalRouteRef<Params, any>,
+): routeRef is RouteRef<Params> {
+  return routeRef[routeRefType] === 'absolute';
+}

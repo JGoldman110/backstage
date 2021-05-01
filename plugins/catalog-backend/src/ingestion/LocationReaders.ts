@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+import { NotAllowedError } from '@backstage/errors';
 import { UrlReader } from '@backstage/backend-common';
 import {
   Entity,
@@ -21,6 +22,7 @@ import {
   EntityRelationSpec,
   ENTITY_DEFAULT_NAMESPACE,
   LocationSpec,
+  stringifyLocationReference,
 } from '@backstage/catalog-model';
 import { Config } from '@backstage/config';
 import { Logger } from 'winston';
@@ -32,6 +34,7 @@ import {
   CatalogProcessorEntityResult,
   CatalogProcessorErrorResult,
   CatalogProcessorLocationResult,
+  CatalogProcessorParser,
   CatalogProcessorResult,
 } from './processors/types';
 import { LocationReader, ReadLocationResult } from './types';
@@ -41,6 +44,7 @@ const MAX_DEPTH = 10;
 
 type Options = {
   reader: UrlReader;
+  parser: CatalogProcessorParser;
   logger: Logger;
   config: Config;
   processors: CatalogProcessor[];
@@ -78,13 +82,17 @@ export class LocationReaders implements LocationReader {
           if (rulesEnforcer.isAllowed(item.entity, item.location)) {
             const relations = Array<EntityRelationSpec>();
 
-            const entity = await this.handleEntity(item, emitResult => {
-              if (emitResult.type === 'relation') {
-                relations.push(emitResult.relation);
-                return;
-              }
-              emit(emitResult);
-            });
+            const entity = await this.handleEntity(
+              item,
+              emitResult => {
+                if (emitResult.type === 'relation') {
+                  relations.push(emitResult.relation);
+                  return;
+                }
+                emit(emitResult);
+              },
+              location,
+            );
 
             if (entity) {
               output.entities.push({
@@ -96,8 +104,12 @@ export class LocationReaders implements LocationReader {
           } else {
             output.errors.push({
               location: item.location,
-              error: new Error(
-                `Entity of kind ${item.entity.kind} is not allowed from location ${item.location.type} ${item.location.target}`,
+              error: new NotAllowedError(
+                `Entity of kind ${
+                  item.entity.kind
+                } is not allowed from location ${stringifyLocationReference(
+                  item.location,
+                )}`,
               ),
             });
           }
@@ -133,7 +145,16 @@ export class LocationReaders implements LocationReader {
       if (emitResult.type === 'relation') {
         throw new Error('readLocation may not emit entity relations');
       }
-
+      if (
+        emitResult.type === 'location' &&
+        emitResult.location.type === item.location.type &&
+        emitResult.location.target === item.location.target
+      ) {
+        // Ignore self-referential locations silently (this can happen for
+        // example if you use a glob target like "**/*.yaml" in a Location
+        // entity)
+        return;
+      }
       emit(emitResult);
     };
 
@@ -145,19 +166,26 @@ export class LocationReaders implements LocationReader {
               item.location,
               item.optional,
               validatedEmit,
+              this.options.parser,
             )
           ) {
             return;
           }
         } catch (e) {
-          const message = `Processor ${processor.constructor.name} threw an error while reading location ${item.location.type} ${item.location.target}, ${e}`;
+          const message = `Processor ${
+            processor.constructor.name
+          } threw an error while reading location ${stringifyLocationReference(
+            item.location,
+          )}, ${e}`;
           emit(result.generalError(item.location, message));
           logger.warn(message);
         }
       }
     }
 
-    const message = `No processor was able to read location ${item.location.type} ${item.location.target}`;
+    const message = `No processor was able to read location ${stringifyLocationReference(
+      item.location,
+    )}`;
     emit(result.inputError(item.location, message));
     logger.warn(message);
   }
@@ -165,6 +193,7 @@ export class LocationReaders implements LocationReader {
   private async handleEntity(
     item: CatalogProcessorEntityResult,
     emit: CatalogProcessorEmit,
+    originLocation: LocationSpec,
   ): Promise<Entity | undefined> {
     const { processors, logger } = this.options;
 
@@ -185,9 +214,14 @@ export class LocationReaders implements LocationReader {
             current,
             item.location,
             emit,
+            originLocation,
           );
         } catch (e) {
-          const message = `Processor ${processor.constructor.name} threw an error while preprocessing entity ${kind}:${namespace}/${name} at ${item.location.type} ${item.location.target}, ${e}`;
+          const message = `Processor ${
+            processor.constructor.name
+          } threw an error while preprocessing entity ${kind}:${namespace}/${name} at ${stringifyLocationReference(
+            item.location,
+          )}, ${e}`;
           emit(result.generalError(item.location, e.message));
           logger.warn(message);
           return undefined;
@@ -198,14 +232,18 @@ export class LocationReaders implements LocationReader {
     try {
       const next = await this.options.policy.enforce(current);
       if (!next) {
-        const message = `Policy unexpectedly returned no data while analyzing entity ${kind}:${namespace}/${name} at ${item.location.type} ${item.location.target}`;
+        const message = `Policy unexpectedly returned no data while analyzing entity ${kind}:${namespace}/${name} at ${stringifyLocationReference(
+          item.location,
+        )}`;
         emit(result.generalError(item.location, message));
         logger.warn(message);
         return undefined;
       }
       current = next;
     } catch (e) {
-      const message = `Policy check failed while analyzing entity ${kind}:${namespace}/${name} at ${item.location.type} ${item.location.target}, ${e}`;
+      const message = `Policy check failed while analyzing entity ${kind}:${namespace}/${name} at ${stringifyLocationReference(
+        item.location,
+      )}, ${e}`;
       emit(result.inputError(item.location, e.message));
       logger.warn(message);
       return undefined;
@@ -220,7 +258,11 @@ export class LocationReaders implements LocationReader {
             break;
           }
         } catch (e) {
-          const message = `Processor ${processor.constructor.name} threw an error while validating the entity ${kind}:${namespace}/${name} at ${item.location.type} ${item.location.target}, ${e}`;
+          const message = `Processor ${
+            processor.constructor.name
+          } threw an error while validating the entity ${kind}:${namespace}/${name} at ${stringifyLocationReference(
+            item.location,
+          )}, ${e}`;
           emit(result.inputError(item.location, message));
           logger.warn(message);
           return undefined;
@@ -228,7 +270,9 @@ export class LocationReaders implements LocationReader {
       }
     }
     if (!handled) {
-      const message = `No processor recognized the entity ${kind}:${namespace}/${name} at ${item.location.type} ${item.location.target}`;
+      const message = `No processor recognized the entity ${kind}:${namespace}/${name} at ${stringifyLocationReference(
+        item.location,
+      )}`;
       emit(result.inputError(item.location, message));
       logger.warn(message);
       return undefined;
@@ -243,7 +287,11 @@ export class LocationReaders implements LocationReader {
             emit,
           );
         } catch (e) {
-          const message = `Processor ${processor.constructor.name} threw an error while postprocessing entity ${kind}:${namespace}/${name} at ${item.location.type} ${item.location.target}, ${e}`;
+          const message = `Processor ${
+            processor.constructor.name
+          } threw an error while postprocessing entity ${kind}:${namespace}/${name} at ${stringifyLocationReference(
+            item.location,
+          )}, ${e}`;
           emit(result.generalError(item.location, message));
           logger.warn(message);
           return undefined;
@@ -261,7 +309,9 @@ export class LocationReaders implements LocationReader {
     const { processors, logger } = this.options;
 
     logger.debug(
-      `Encountered error at location ${item.location.type} ${item.location.target}, ${item.error}`,
+      `Encountered error at location ${stringifyLocationReference(
+        item.location,
+      )}, ${item.error}`,
     );
 
     const validatedEmit: CatalogProcessorEmit = emitResult => {
@@ -277,7 +327,11 @@ export class LocationReaders implements LocationReader {
         try {
           await processor.handleError(item.error, item.location, validatedEmit);
         } catch (e) {
-          const message = `Processor ${processor.constructor.name} threw an error while handling another error at ${item.location.type} ${item.location.target}, ${e}`;
+          const message = `Processor ${
+            processor.constructor.name
+          } threw an error while handling another error at ${stringifyLocationReference(
+            item.location,
+          )}, ${e}`;
           emit(result.generalError(item.location, message));
           logger.warn(message);
         }

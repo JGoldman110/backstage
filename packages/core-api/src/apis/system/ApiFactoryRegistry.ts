@@ -46,7 +46,7 @@ type FactoryTuple = {
  * higher priority scopes override ones with lower priority.
  */
 export class ApiFactoryRegistry implements ApiFactoryHolder {
-  private readonly factories = new Map<AnyApiRef, FactoryTuple>();
+  private readonly factories = new Map<string, FactoryTuple>();
 
   /**
    * Register a new API factory. Returns true if the factory was added
@@ -55,29 +55,35 @@ export class ApiFactoryRegistry implements ApiFactoryHolder {
    * A factory will not be added to the registry if there is already
    * an existing factory with the same or higher priority.
    */
-  register<Api, Deps extends { [name in string]: unknown }>(
+  register<Api, Impl extends Api, Deps extends { [name in string]: unknown }>(
     scope: ApiFactoryScope,
-    factory: ApiFactory<Api, Deps>,
+    factory: ApiFactory<Api, Impl, Deps>,
   ) {
     const priority = ScopePriority[scope];
-    const existing = this.factories.get(factory.api);
+    const existing = this.factories.get(factory.api.id);
     if (existing && existing.priority >= priority) {
       return false;
     }
 
-    this.factories.set(factory.api, { priority, factory });
+    this.factories.set(factory.api.id, { priority, factory });
     return true;
   }
 
-  get<T>(api: ApiRef<T>): ApiFactory<T, { [x: string]: unknown }> | undefined {
-    const tuple = this.factories.get(api);
+  get<T>(
+    api: ApiRef<T>,
+  ): ApiFactory<T, T, { [x: string]: unknown }> | undefined {
+    const tuple = this.factories.get(api.id);
     if (!tuple) {
       return undefined;
     }
-    return tuple.factory as ApiFactory<T, { [x: string]: unknown }>;
+    return tuple.factory as ApiFactory<T, T, { [x: string]: unknown }>;
   }
 
   getAllApis(): Set<AnyApiRef> {
-    return new Set(this.factories.keys());
+    const refs = new Set<AnyApiRef>();
+    for (const { factory } of this.factories.values()) {
+      refs.add(factory.api);
+    }
+    return refs;
   }
 }

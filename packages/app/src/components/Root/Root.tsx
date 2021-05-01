@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-import React, { FC, useContext } from 'react';
-import PropTypes from 'prop-types';
+import React, { useContext, PropsWithChildren } from 'react';
 import { Link, makeStyles } from '@material-ui/core';
 import HomeIcon from '@material-ui/icons/Home';
 import ExtensionIcon from '@material-ui/icons/Extension';
 import RuleIcon from '@material-ui/icons/AssignmentTurnedIn';
 import MapIcon from '@material-ui/icons/MyLocation';
+import LayersIcon from '@material-ui/icons/Layers';
 import LibraryBooks from '@material-ui/icons/LibraryBooks';
 import CreateComponentIcon from '@material-ui/icons/AddCircleOutline';
 import MoneyIcon from '@material-ui/icons/MonetizationOn';
@@ -33,12 +33,12 @@ import {
   SidebarContext,
   SidebarItem,
   SidebarDivider,
-  SidebarSearchField,
   SidebarSpace,
 } from '@backstage/core';
 import { NavLink } from 'react-router-dom';
-import { graphiQLRouteRef } from '@backstage/plugin-graphiql';
+import { GraphiQLIcon } from '@backstage/plugin-graphiql';
 import { Settings as SidebarSettings } from '@backstage/plugin-user-settings';
+import { SidebarSearch } from '@backstage/plugin-search';
 
 const useSidebarLogoStyles = makeStyles({
   root: {
@@ -55,7 +55,7 @@ const useSidebarLogoStyles = makeStyles({
   },
 });
 
-const SidebarLogo: FC<{}> = () => {
+const SidebarLogo = () => {
   const classes = useSidebarLogoStyles();
   const { isOpen } = useContext(SidebarContext);
 
@@ -73,33 +73,24 @@ const SidebarLogo: FC<{}> = () => {
   );
 };
 
-const handleSearch = (query: string): void => {
-  // XXX (@koroeskohr): for testing purposes
-  // eslint-disable-next-line no-console
-  console.log(query);
-};
-
-const Root: FC<{}> = ({ children }) => (
+export const Root = ({ children }: PropsWithChildren<{}>) => (
   <SidebarPage>
     <Sidebar>
       <SidebarLogo />
-      <SidebarSearchField onSearch={handleSearch} />
+      <SidebarSearch />
       <SidebarDivider />
       {/* Global nav, not org-specific */}
       <SidebarItem icon={HomeIcon} to="/catalog" text="Home" />
       <SidebarItem icon={ExtensionIcon} to="api-docs" text="APIs" />
       <SidebarItem icon={LibraryBooks} to="docs" text="Docs" />
+      <SidebarItem icon={LayersIcon} to="explore" text="Explore" />
       <SidebarItem icon={CreateComponentIcon} to="create" text="Create..." />
       {/* End global nav */}
       <SidebarDivider />
       <SidebarItem icon={MapIcon} to="tech-radar" text="Tech Radar" />
       <SidebarItem icon={RuleIcon} to="lighthouse" text="Lighthouse" />
       <SidebarItem icon={MoneyIcon} to="cost-insights" text="Cost Insights" />
-      <SidebarItem
-        icon={graphiQLRouteRef.icon!}
-        to={graphiQLRouteRef.path}
-        text={graphiQLRouteRef.title}
-      />
+      <SidebarItem icon={GraphiQLIcon} to="graphiql" text="GraphiQL" />
       <SidebarSpace />
       <SidebarDivider />
       <SidebarSettings />
@@ -107,9 +98,3 @@ const Root: FC<{}> = ({ children }) => (
     {children}
   </SidebarPage>
 );
-
-Root.propTypes = {
-  children: PropTypes.node,
-};
-
-export default Root;

@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import {
+  auth0AuthApiRef,
   githubAuthApiRef,
   gitlabAuthApiRef,
   googleAuthApiRef,
@@ -34,7 +35,7 @@ export const DefaultProviderSettings = ({ configuredProviders }: Props) => (
     {configuredProviders.includes('google') && (
       <ProviderSettingsItem
         title="Google"
-        description={googleAuthApiRef.description}
+        description="Provides authentication towards Google APIs and identities"
         apiRef={googleAuthApiRef}
         icon={Star}
       />
@@ -42,31 +43,39 @@ export const DefaultProviderSettings = ({ configuredProviders }: Props) => (
     {configuredProviders.includes('microsoft') && (
       <ProviderSettingsItem
         title="Microsoft"
-        description={microsoftAuthApiRef.description}
+        description="Provides authentication towards Microsoft APIs and identities"
         apiRef={microsoftAuthApiRef}
         icon={Star}
       />
     )}
     {configuredProviders.includes('github') && (
       <ProviderSettingsItem
-        title="Github"
-        description={githubAuthApiRef.description}
+        title="GitHub"
+        description="Provides authentication towards GitHub APIs"
         apiRef={githubAuthApiRef}
         icon={Star}
       />
     )}
     {configuredProviders.includes('gitlab') && (
       <ProviderSettingsItem
-        title="Gitlab"
-        description={gitlabAuthApiRef.description}
+        title="GitLab"
+        description="Provides authentication towards GitLab APIs"
         apiRef={gitlabAuthApiRef}
+        icon={Star}
+      />
+    )}
+    {configuredProviders.includes('auth0') && (
+      <ProviderSettingsItem
+        title="Auth0"
+        description="Provides authentication towards Auth0 APIs"
+        apiRef={auth0AuthApiRef}
         icon={Star}
       />
     )}
     {configuredProviders.includes('okta') && (
       <ProviderSettingsItem
         title="Okta"
-        description={oktaAuthApiRef.description}
+        description="Provides authentication towards Okta APIs"
         apiRef={oktaAuthApiRef}
         icon={Star}
       />
@@ -74,7 +83,7 @@ export const DefaultProviderSettings = ({ configuredProviders }: Props) => (
     {configuredProviders.includes('oauth2') && (
       <ProviderSettingsItem
         title="YourOrg"
-        description={oauth2ApiRef.description}
+        description="Example of how to use oauth2 custom provider"
         apiRef={oauth2ApiRef}
         icon={Star}
       />

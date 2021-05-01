@@ -37,18 +37,13 @@ const mockGoogleAuth = {
 };
 
 const createConfig = () =>
-  ConfigReader.fromConfigs([
-    {
-      context: '',
-      data: {
-        auth: {
-          providers: {
-            google: { development: {} },
-          },
-        },
+  new ConfigReader({
+    auth: {
+      providers: {
+        google: { development: {} },
       },
     },
-  ]);
+  });
 
 const config = createConfig();
 
@@ -69,7 +64,9 @@ describe('<AuthProviders />', () => {
 
     expect(rendered.getByText('Google')).toBeInTheDocument();
     expect(
-      rendered.getByText(googleAuthApiRef.description),
+      rendered.getByText(
+        'Provides authentication towards Google APIs and identities',
+      ),
     ).toBeInTheDocument();
 
     const button = rendered.getByTitle('Sign in to Google');

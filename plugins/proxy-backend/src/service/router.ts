@@ -68,10 +68,33 @@ export function buildMiddleware(
   const fullConfig =
     typeof config === 'string' ? { target: config } : { ...config };
 
+  // Validate that target is a valid URL.
+  try {
+    // eslint-disable-next-line no-new
+    new URL(fullConfig.target!);
+  } catch {
+    throw new Error(
+      `Proxy target is not a valid URL: ${fullConfig.target ?? ''}`,
+    );
+  }
+
   // Default is to do a path rewrite that strips out the proxy's path prefix
   // and the rest of the route.
   if (fullConfig.pathRewrite === undefined) {
-    const routeWithSlash = route.endsWith('/') ? route : `${route}/`;
+    let routeWithSlash = route.endsWith('/') ? route : `${route}/`;
+
+    if (!pathPrefix.endsWith('/') && !routeWithSlash.startsWith('/')) {
+      // Need to insert a / between pathPrefix and routeWithSlash
+      routeWithSlash = `/${routeWithSlash}`;
+    } else if (pathPrefix.endsWith('/') && routeWithSlash.startsWith('/')) {
+      // Never expect this to happen at this point in time as
+      // pathPrefix is set using `getExternalBaseUrl` which "Returns the
+      // external HTTP base backend URL for a given plugin,
+      // **without a trailing slash.**". But in case this changes in future, we
+      // need to drop a / on either pathPrefix or routeWithSlash
+      routeWithSlash = routeWithSlash.substring(1);
+    }
+
     fullConfig.pathRewrite = {
       [`^${pathPrefix}${routeWithSlash}`]: '/',
     };
@@ -85,13 +108,8 @@ export function buildMiddleware(
   // Attach the logger to the proxy config
   fullConfig.logProvider = () => logger;
 
-  // Only permit the allowed HTTP methods if configured
-  const filter = (_pathname: string, req: http.IncomingMessage): boolean => {
-    return fullConfig?.allowedMethods?.includes(req.method!) ?? true;
-  };
-
-  // Only forward the allowed HTTP headers to not forward unwanted secret headers
-  const headerAllowList = new Set<string>(
+  // Only return the allowed HTTP headers to not forward unwanted secret headers
+  const requestHeaderAllowList = new Set<string>(
     [
       // allow all safe headers
       ...safeForwardHeaders,
@@ -104,12 +122,43 @@ export function buildMiddleware(
     ].map(h => h.toLocaleLowerCase()),
   );
 
-  fullConfig.onProxyReq = (proxyReq: http.ClientRequest) => {
-    const headerNames = proxyReq.getHeaderNames();
+  // Use the custom middleware filter to do two things:
+  //  1. Remove any headers not in the allow list to stop them being forwarded
+  //  2. Only permit the allowed HTTP methods if configured
+  //
+  // We are filtering the proxy request headers here rather than in
+  // `onProxyReq` becuase when global-agent is enabled then `onProxyReq`
+  // fires _after_ the agent has already sent the headers to the proxy
+  // target, causing a ERR_HTTP_HEADERS_SENT crash
+  const filter = (_pathname: string, req: http.IncomingMessage): boolean => {
+    const headerNames = Object.keys(req.headers);
+    headerNames.forEach(h => {
+      if (!requestHeaderAllowList.has(h.toLocaleLowerCase())) {
+        delete req.headers[h];
+      }
+    });
+
+    return fullConfig?.allowedMethods?.includes(req.method!) ?? true;
+  };
+
+  // Only forward the allowed HTTP headers to not forward unwanted secret headers
+  const responseHeaderAllowList = new Set<string>(
+    [
+      // allow all safe headers
+      ...safeForwardHeaders,
+
+      // allow all configured headers
+      ...(fullConfig.allowedHeaders || []),
+    ].map(h => h.toLocaleLowerCase()),
+  );
+
+  // only forward the allowed headers in backend->client
+  fullConfig.onProxyRes = (proxyRes: http.IncomingMessage) => {
+    const headerNames = Object.keys(proxyRes.headers);
 
     headerNames.forEach(h => {
-      if (!headerAllowList.has(h.toLocaleLowerCase())) {
-        proxyReq.removeHeader(h);
+      if (!responseHeaderAllowList.has(h.toLocaleLowerCase())) {
+        delete proxyRes.headers[h];
       }
     });
   };

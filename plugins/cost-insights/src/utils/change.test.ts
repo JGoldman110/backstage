@@ -14,8 +14,15 @@
  * limitations under the License.
  */
 
-import { growthOf } from './change';
-import { GrowthType, ChangeThreshold, EngineerThreshold } from '../types';
+import { growthOf, getPreviousPeriodTotalCost } from './change';
+import {
+  GrowthType,
+  ChangeThreshold,
+  EngineerThreshold,
+  Duration,
+  Cost,
+} from '../types';
+import { MockAggregatedDailyCosts, trendlineOf, changeOf } from '../testUtils';
 
 const GrowthMap = {
   [GrowthType.Negligible]: 'negligible growth',
@@ -25,23 +32,23 @@ const GrowthMap = {
 
 describe.each`
   ratio                           | amount                     | expected
-  ${0.0}                          | ${undefined}               | ${GrowthType.Negligible}
+  ${undefined}                    | ${0}                       | ${GrowthType.Negligible}
+  ${0.0}                          | ${0}                       | ${GrowthType.Negligible}
   ${0.0}                          | ${EngineerThreshold}       | ${GrowthType.Negligible}
   ${ChangeThreshold.lower}        | ${0}                       | ${GrowthType.Negligible}
-  ${ChangeThreshold.lower + 0.01} | ${undefined}               | ${GrowthType.Negligible}
+  ${ChangeThreshold.lower + 0.01} | ${0}                       | ${GrowthType.Negligible}
   ${ChangeThreshold.lower + 0.01} | ${EngineerThreshold}       | ${GrowthType.Negligible}
   ${ChangeThreshold.lower + 0.01} | ${EngineerThreshold + 0.1} | ${GrowthType.Negligible}
   ${ChangeThreshold.lower - 0.01} | ${EngineerThreshold - 0.1} | ${GrowthType.Negligible}
-  ${ChangeThreshold.upper - 0.01} | ${undefined}               | ${GrowthType.Negligible}
+  ${ChangeThreshold.lower - 0.01} | ${0}                       | ${GrowthType.Negligible}
+  ${ChangeThreshold.upper}        | ${0}                       | ${GrowthType.Negligible}
+  ${ChangeThreshold.upper - 0.01} | ${0}                       | ${GrowthType.Negligible}
   ${ChangeThreshold.upper + 0.01} | ${EngineerThreshold - 0.1} | ${GrowthType.Negligible}
-  ${ChangeThreshold.lower}        | ${undefined}               | ${GrowthType.Savings}
+  ${ChangeThreshold.upper + 0.01} | ${0}                       | ${GrowthType.Negligible}
   ${ChangeThreshold.lower}        | ${EngineerThreshold}       | ${GrowthType.Savings}
-  ${ChangeThreshold.lower - 0.01} | ${undefined}               | ${GrowthType.Savings}
   ${ChangeThreshold.lower - 0.01} | ${EngineerThreshold}       | ${GrowthType.Savings}
   ${ChangeThreshold.lower - 0.01} | ${EngineerThreshold + 0.1} | ${GrowthType.Savings}
-  ${ChangeThreshold.upper}        | ${undefined}               | ${GrowthType.Excess}
   ${ChangeThreshold.upper}        | ${EngineerThreshold}       | ${GrowthType.Excess}
-  ${ChangeThreshold.upper + 0.01} | ${undefined}               | ${GrowthType.Excess}
   ${ChangeThreshold.upper + 0.01} | ${EngineerThreshold}       | ${GrowthType.Excess}
   ${ChangeThreshold.upper + 0.01} | ${EngineerThreshold + 0.1} | ${GrowthType.Excess}
 `(
@@ -56,7 +63,26 @@ describe.each`
     expected: GrowthType;
   }) => {
     it(`should display ${GrowthMap[expected]}`, () => {
-      expect(growthOf(ratio, amount)).toBe(expected);
+      expect(growthOf({ ratio, amount })).toBe(expected);
     });
   },
 );
+
+describe('getPreviousPeriodTotalCost', () => {
+  it('Correctly returns the total cost for the previous period given daily costs', () => {
+    const mockGroupDailyCost: Cost = {
+      id: 'test-group',
+      aggregation: MockAggregatedDailyCosts,
+      change: changeOf(MockAggregatedDailyCosts),
+      trendline: trendlineOf(MockAggregatedDailyCosts),
+    };
+    const inclusiveEndDate = '2020-09-30';
+    expect(
+      getPreviousPeriodTotalCost(
+        mockGroupDailyCost.aggregation,
+        Duration.P30D,
+        inclusiveEndDate,
+      ),
+    ).toEqual(96_600);
+  });
+});

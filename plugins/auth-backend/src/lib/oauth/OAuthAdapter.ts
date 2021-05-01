@@ -22,7 +22,7 @@ import {
   BackstageIdentity,
   AuthProviderConfig,
 } from '../../providers/types';
-import { InputError } from '@backstage/backend-common';
+import { InputError } from '@backstage/errors';
 import { TokenIssuer } from '../../identity';
 import { verifyNonce } from './helpers';
 import { postMessageResponse, ensuresXRequestedWith } from '../flow';
@@ -155,7 +155,7 @@ export class OAuthAdapter implements AuthProviderRouteHandlers {
       // remove refresh token cookie before logout
       this.removeRefreshTokenCookie(res);
     }
-    res.send('logout!');
+    res.status(200).send('logout!');
   }
 
   async refresh(req: express.Request, res: express.Response): Promise<void> {
@@ -165,9 +165,11 @@ export class OAuthAdapter implements AuthProviderRouteHandlers {
     }
 
     if (!this.handlers.refresh || this.options.disableRefresh) {
-      res.send(
-        `Refresh token not supported for provider: ${this.options.providerId}`,
-      );
+      res
+        .status(400)
+        .send(
+          `Refresh token not supported for provider: ${this.options.providerId}`,
+        );
       return;
     }
 
@@ -198,7 +200,7 @@ export class OAuthAdapter implements AuthProviderRouteHandlers {
         this.setRefreshTokenCookie(res, response.providerInfo.refreshToken);
       }
 
-      res.send(response);
+      res.status(200).json(response);
     } catch (error) {
       res.status(401).send(`${error.message}`);
     }

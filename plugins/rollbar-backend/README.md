@@ -8,9 +8,7 @@ The following values are read from the configuration file.
 
 ```yaml
 rollbar:
-  organization: organization-name
-  accountToken:
-    $env: ROLLBAR_ACCOUNT_TOKEN
+  accountToken: ${ROLLBAR_ACCOUNT_TOKEN}
 ```
 
 _NOTE: The `ROLLBAR_ACCOUNT_TOKEN` environment variable must be set to a read

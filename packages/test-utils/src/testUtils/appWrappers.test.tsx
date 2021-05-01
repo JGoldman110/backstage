@@ -14,18 +14,22 @@
  * limitations under the License.
  */
 
-import React, { FC, useEffect } from 'react';
-import { render } from '@testing-library/react';
-import { wrapInTestApp, renderInTestApp } from './appWrappers';
-import { Route, Routes } from 'react-router';
-import { withLogCollector } from '@backstage/test-utils-core';
 import {
-  useApi,
-  errorApiRef,
   ApiProvider,
   ApiRegistry,
+  createExternalRouteRef,
+  createRouteRef,
+  createSubRouteRef,
+  errorApiRef,
+  useApi,
+  useRouteRef,
 } from '@backstage/core-api';
+import { withLogCollector } from '@backstage/test-utils-core';
+import { render } from '@testing-library/react';
+import React, { useEffect } from 'react';
+import { Route, Routes } from 'react-router';
 import { MockErrorApi } from './apis';
+import { renderInTestApp, wrapInTestApp } from './appWrappers';
 
 describe('wrapInTestApp', () => {
   it('should provide routing and warn about missing act()', async () => {
@@ -54,7 +58,7 @@ describe('wrapInTestApp', () => {
 
   it('should render a component in a test app without warning about missing act()', async () => {
     const { error } = await withLogCollector(['error'], async () => {
-      const Foo: FC<{}> = () => {
+      const Foo = () => {
         return <p>foo</p>;
       };
 
@@ -66,7 +70,7 @@ describe('wrapInTestApp', () => {
   });
 
   it('should render a node in a test app', async () => {
-    const Foo: FC<{}> = () => {
+    const Foo = () => {
       return <p>foo</p>;
     };
 
@@ -75,7 +79,7 @@ describe('wrapInTestApp', () => {
   });
 
   it('should provide mock API implementations', async () => {
-    const A: FC<{}> = () => {
+    const A = () => {
       const errorApi = useApi(errorApiRef);
       errorApi.post(new Error('NOPE'));
       return null;
@@ -96,7 +100,7 @@ describe('wrapInTestApp', () => {
   it('should allow custom API implementations', async () => {
     const mockErrorApi = new MockErrorApi({ collect: true });
 
-    const A: FC<{}> = () => {
+    const A = () => {
       const errorApi = useApi(errorApiRef);
       useEffect(() => {
         errorApi.post(new Error('NOPE'));
@@ -112,5 +116,46 @@ describe('wrapInTestApp', () => {
 
     expect(rendered.getByText('foo')).toBeInTheDocument();
     expect(mockErrorApi.getErrors()).toEqual([{ error: new Error('NOPE') }]);
+  });
+
+  it('should allow route refs to be mounted on specific paths', async () => {
+    const aRouteRef = createRouteRef({ id: 'A' });
+    const bRouteRef = createRouteRef({ id: 'B', params: ['name'] });
+    const subRouteRef = createSubRouteRef({
+      id: 'S',
+      parent: bRouteRef,
+      path: '/:page',
+    });
+    const externalRouteRef = createExternalRouteRef({
+      id: 'E',
+      params: ['name'],
+    });
+
+    const MyComponent = () => {
+      const a = useRouteRef(aRouteRef);
+      const b = useRouteRef(bRouteRef);
+      const s = useRouteRef(subRouteRef);
+      const e = useRouteRef(externalRouteRef);
+      return (
+        <div>
+          <div>Link A: {a()}</div>
+          <div>Link B: {b({ name: 'x' })}</div>
+          <div>Link S: {s({ name: 'y', page: 'p' })}</div>
+          <div>Link E: {e({ name: 'z' })}</div>
+        </div>
+      );
+    };
+
+    const rendered = await renderInTestApp(<MyComponent />, {
+      mountedRoutes: {
+        '/my-a-path': aRouteRef,
+        '/my-b-path/:name': bRouteRef,
+        '/my-e-path/:name': externalRouteRef,
+      },
+    });
+    expect(rendered.getByText('Link A: /my-a-path')).toBeInTheDocument();
+    expect(rendered.getByText('Link B: /my-b-path/x')).toBeInTheDocument();
+    expect(rendered.getByText('Link S: /my-b-path/y/p')).toBeInTheDocument();
+    expect(rendered.getByText('Link E: /my-e-path/z')).toBeInTheDocument();
   });
 });

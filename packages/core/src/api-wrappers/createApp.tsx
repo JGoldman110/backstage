@@ -14,14 +14,18 @@
  * limitations under the License.
  */
 
-import React, { FC } from 'react';
+import React, { PropsWithChildren } from 'react';
 import privateExports, {
   AppOptions,
   defaultSystemIcons,
   BootErrorPageProps,
   AppConfigLoader,
 } from '@backstage/core-api';
-import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import {
+  BrowserRouter,
+  MemoryRouter,
+  useInRouterContext,
+} from 'react-router-dom';
 import LightIcon from '@material-ui/icons/WbSunny';
 import DarkIcon from '@material-ui/icons/Brightness2';
 import { ErrorPage } from '../layout/ErrorPage';
@@ -58,10 +62,17 @@ export const defaultConfigLoader: AppConfigLoader = async (
   const configs = (appConfig.slice() as unknown) as AppConfig[];
 
   // Avoiding this string also being replaced at runtime
-  if (runtimeConfigJson !== '__app_injected_runtime_config__'.toUpperCase()) {
+  if (
+    runtimeConfigJson !==
+    '__app_injected_runtime_config__'.toLocaleUpperCase('en-US')
+  ) {
     try {
       const data = JSON.parse(runtimeConfigJson) as JsonObject;
-      configs.push({ data, context: 'env' });
+      if (Array.isArray(data)) {
+        configs.push(...data);
+      } else {
+        configs.push({ data, context: 'env' });
+      }
     } catch (error) {
       throw new Error(`Failed to load runtime configuration, ${error}`);
     }
@@ -82,6 +93,13 @@ export const defaultConfigLoader: AppConfigLoader = async (
 // The actual implementation of the app class still lives in core-api,
 // as it needs to be used by dev- and test-utils.
 
+export function OptionallyWrapInRouter({ children }: PropsWithChildren<{}>) {
+  if (useInRouterContext()) {
+    return <>{children}</>;
+  }
+  return <MemoryRouter>{children}</MemoryRouter>;
+}
+
 /**
  * Creates a new Backstage App.
  */
@@ -89,16 +107,18 @@ export function createApp(options?: AppOptions) {
   const DefaultNotFoundPage = () => (
     <ErrorPage status="404" statusMessage="PAGE NOT FOUND" />
   );
-  const DefaultBootErrorPage: FC<BootErrorPageProps> = ({ step, error }) => {
+  const DefaultBootErrorPage = ({ step, error }: BootErrorPageProps) => {
     let message = '';
     if (step === 'load-config') {
       message = `The configuration failed to load, someone should have a look at this error: ${error.message}`;
+    } else if (step === 'load-chunk') {
+      message = `Lazy loaded chunk failed to load, try to reload the page: ${error.message}`;
     }
     // TODO: figure out a nicer way to handle routing on the error page, when it can be done.
     return (
-      <MemoryRouter>
+      <OptionallyWrapInRouter>
         <ErrorPage status="501" statusMessage={message} />
-      </MemoryRouter>
+      </OptionallyWrapInRouter>
     );
   };
 
@@ -138,6 +158,7 @@ export function createApp(options?: AppOptions) {
     themes,
     configLoader,
     defaultApis,
+    bindRoutes: options?.bindRoutes,
   });
 
   app.verify();

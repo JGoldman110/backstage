@@ -38,7 +38,7 @@ describe('parseEntityYaml', () => {
       spec:
         type: website
         lifecycle: production
-        owner: guest
+        owner: user:guest
     `,
           'utf8',
         ),
@@ -60,7 +60,7 @@ describe('parseEntityYaml', () => {
         spec: {
           type: 'website',
           lifecycle: 'production',
-          owner: 'guest',
+          owner: 'user:guest',
         },
       }),
     ]);
@@ -115,6 +115,41 @@ describe('parseEntityYaml', () => {
     ]);
   });
 
+  it('should handle empty yaml documents', () => {
+    // This happens if the user accidentally adds a "---"
+    // at the end of a file
+    const results = Array.from(
+      parseEntityYaml(
+        Buffer.from(
+          `
+      apiVersion: backstage.io/v1alpha1
+      kind: Component
+      metadata:
+        name: web
+      spec:
+        type: website
+---
+    `,
+          'utf8',
+        ),
+        testLoc,
+      ),
+    );
+
+    expect(results).toEqual([
+      result.entity(testLoc, {
+        apiVersion: 'backstage.io/v1alpha1',
+        kind: 'Component',
+        metadata: {
+          name: 'web',
+        },
+        spec: {
+          type: 'website',
+        },
+      }),
+    ]);
+  });
+
   it('should emit parsing errors', () => {
     const results = Array.from(
       parseEntityYaml(Buffer.from('`', 'utf8'), testLoc),
@@ -124,7 +159,7 @@ describe('parseEntityYaml', () => {
     expect(results).toEqual([
       result.generalError(
         testLoc,
-        'YAML error, YAMLSemanticError: Plain value cannot start with reserved character `',
+        'YAML error at my-loc-type:my-loc-target, YAMLSemanticError: Plain value cannot start with reserved character `',
       ),
     ]);
   });
@@ -163,14 +198,14 @@ describe('parseEntityYaml', () => {
       }),
       result.generalError(
         testLoc,
-        'YAML error, YAMLSemanticError: Nested mappings are not allowed in compact mappings',
+        'YAML error at my-loc-type:my-loc-target, YAMLSemanticError: Nested mappings are not allowed in compact mappings',
       ),
     ]);
   });
 
   it('must be an object at root', () => {
     const results = Array.from(
-      parseEntityYaml(Buffer.from('imma-string', 'utf8'), testLoc),
+      parseEntityYaml(Buffer.from('i-am-a-string', 'utf8'), testLoc),
     );
 
     expect(results).toEqual([

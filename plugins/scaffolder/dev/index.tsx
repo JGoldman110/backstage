@@ -14,7 +14,35 @@
  * limitations under the License.
  */
 
+import { CatalogClient } from '@backstage/catalog-client';
+import { configApiRef, discoveryApiRef, identityApiRef } from '@backstage/core';
 import { createDevApp } from '@backstage/dev-utils';
-import { plugin } from '../src/plugin';
+import { scmIntegrationsApiRef } from '@backstage/integration-react';
+import { catalogApiRef } from '@backstage/plugin-catalog-react';
+import React from 'react';
+import { scaffolderApiRef, ScaffolderClient } from '../src';
+import { ScaffolderPage } from '../src/plugin';
 
-createDevApp().registerPlugin(plugin).render();
+createDevApp()
+  .registerApi({
+    api: catalogApiRef,
+    deps: { discoveryApi: discoveryApiRef },
+    factory: ({ discoveryApi }) => new CatalogClient({ discoveryApi }),
+  })
+  .registerApi({
+    api: scaffolderApiRef,
+    deps: {
+      discoveryApi: discoveryApiRef,
+      identityApi: identityApiRef,
+      configApi: configApiRef,
+      scmIntegrationsApi: scmIntegrationsApiRef,
+    },
+    factory: ({ discoveryApi, identityApi, scmIntegrationsApi }) =>
+      new ScaffolderClient({ discoveryApi, identityApi, scmIntegrationsApi }),
+  })
+  .addPage({
+    path: '/create',
+    title: 'Create',
+    element: <ScaffolderPage />,
+  })
+  .render();

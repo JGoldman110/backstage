@@ -24,36 +24,26 @@ cd packages/app
 yarn add @backstage/plugin-scaffolder
 ```
 
-Make sure the version of `@backstage/plugin-scaffolder` matches the version of
-other `@backstage` packages. You can update it in `packages/app/package.json` if
-it doesn't.
-
 ### Adding the Plugin to your `packages/app`
 
-Add the following entry to the head of your `packages/app/src/plugins.ts`:
+Add the root page that the Scaffolder plugin provides to your app. You can
+choose any path for the route, but we recommend the following:
 
-```ts
-export { plugin as ScaffolderPlugin } from '@backstage/plugin-scaffolder';
+```tsx
+import { ScaffolderPage } from '@backstage/plugin-scaffolder';
+
+// Add to the top-level routes, directly within <FlatRoutes>
+<Route path="/create" element={<ScaffolderPage />} />;
 ```
 
-Add the following to your `packages/app/src/apis.ts`:
+You may also want to add a link to the template index page to your sidebar:
 
-```ts
-import { scaffolderApiRef, ScaffolderApi } from '@backstage/plugin-scaffolder';
+```tsx
+import CreateComponentIcon from '@material-ui/icons/AddCircleOutline';
 
-// Inside the ApiRegistry builder function ...
-
-builder.add(
-  scaffolderApiRef,
-  new ScaffolderApi({
-    apiOrigin: backendUrl,
-    basePath: '/scaffolder/v1',
-  }),
-);
+// Somewhere within the <Sidebar>
+<SidebarItem icon={CreateComponentIcon} to="create" text="Create..." />;
 ```
-
-Where `backendUrl` is the `backend.baseUrl` from config, i.e.
-`const backendUrl = config.getString('backend.baseUrl')`.
 
 This is all that is needed for the frontend part of the Scaffolder plugin to
 work!
@@ -71,10 +61,6 @@ cd packages/backend
 yarn add @backstage/plugin-scaffolder-backend
 ```
 
-Make sure the version of `@backstage/plugin-scaffolder-backend` matches the
-version of other `@backstage` packages. You can update it in
-`packages/backend/package.json` if it doesn't.
-
 ### Adding the Plugin to your `packages/backend`
 
 You'll need to add the plugin to the `backend`'s router. You can do this by
@@ -85,29 +71,26 @@ following contents to get you up and running quickly.
 import {
   CookieCutter,
   createRouter,
-  FilePreparer,
-  GithubPreparer,
-  GitlabPreparer,
   Preparers,
   Publishers,
-  GithubPublisher,
-  GitlabPublisher,
   CreateReactAppTemplater,
   Templaters,
-  RepoVisibilityOptions,
 } from '@backstage/plugin-scaffolder-backend';
-import { Octokit } from '@octokit/rest';
-import { Gitlab } from '@gitbeaker/node';
+import { SingleHostDiscovery } from '@backstage/backend-common';
 import type { PluginEnvironment } from '../types';
 import Docker from 'dockerode';
+import { CatalogClient } from '@backstage/catalog-client';
 
 export default async function createPlugin({
   logger,
   config,
+  database,
+  reader,
 }: PluginEnvironment) {
   const cookiecutterTemplater = new CookieCutter();
   const craTemplater = new CreateReactAppTemplater();
   const templaters = new Templaters();
+
   templaters.register('cookiecutter', cookiecutterTemplater);
   templaters.register('cra', craTemplater);
 
@@ -115,12 +98,20 @@ export default async function createPlugin({
   const publishers = await Publishers.fromConfig(config, { logger });
 
   const dockerClient = new Docker();
+
+  const discovery = SingleHostDiscovery.fromConfig(config);
+  const catalogClient = new CatalogClient({ discoveryApi: discovery });
+
   return await createRouter({
     preparers,
     templaters,
     publishers,
     logger,
+    config,
     dockerClient,
+    database,
+    catalogClient,
+    reader,
   });
 }
 ```
@@ -133,10 +124,11 @@ import scaffolder from './plugins/scaffolder';
 
 const scaffolderEnv = useHotMemoize(module, () => createEnv('scaffolder'));
 
-const service = createServiceBuilder(module)
-  .loadConfig(configReader)
-  /** several different routers */
-  .addRouter('/scaffolder', await scaffolder(scaffolderEnv));
+const apiRouter = Router();
+/* several router .use calls */
+
+/* add this line */
+apiRouter.use('/scaffolder', await scaffolder(scaffolderEnv));
 ```
 
 ### Adding Templates
@@ -167,13 +159,14 @@ catalog:
 
 ### Runtime Dependencies / Configuration
 
-For the scaffolder backend plugin to function, it needs a GitHub access token,
-and access to a running Docker daemon. You can create a GitHub access token
-[here](https://github.com/settings/tokens/new), select `repo` scope only. Full
-docs on creating private GitHub access tokens is available
-[here](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
-Note that the need for private GitHub access tokens will be replaced with GitHub
-Apps integration further down the line.
+For the scaffolder backend plugin to function, you'll need to setup the
+integrations config in your `app-config.yaml`.
+
+You can find help for different providers below.
+
+> Note: Some of this configuration may already be set up as part of your
+> `app-config.yaml`. We're moving away from the duplicated config for
+> authentication in the `scaffolder` section and using `integrations` instead.
 
 #### GitHub
 
@@ -187,10 +180,13 @@ by specifying `visibility` option. Valid options are `public`, `private` and
 public within the enterprise.
 
 ```yaml
+integrations:
+  github:
+    - host: github.com
+      token: ${GITHUB_TOKEN}
+
 scaffolder:
   github:
-    token:
-      $env: GITHUB_TOKEN
     visibility: public # or 'internal' or 'private'
 ```
 
@@ -201,12 +197,33 @@ allows to configure the private access token and the base URL of a GitLab
 instance:
 
 ```yaml
-scaffolder:
+integrations:
   gitlab:
-    api:
-      baseUrl: https://gitlab.com
-      token:
-        $env: GITLAB_TOKEN
+    - host: gitlab.com
+      token: ${GITLAB_TOKEN}
+```
+
+#### Bitbucket
+
+For Bitbucket there are two authentication methods supported. Either `token` or
+a combination of `appPassword` and `username`. It looks like either of the
+following:
+
+```yaml
+integrations:
+  bitbucket:
+    - host: bitbucket.org
+      token: ${BITBUCKET_TOKEN}
+```
+
+or
+
+```yaml
+integrations:
+  bitbucket:
+    - host: bitbucket.org
+      appPassword: ${BITBUCKET_APP_PASSWORD}
+      username: ${BITBUCKET_USERNAME}
 ```
 
 #### Azure DevOps
@@ -218,12 +235,10 @@ will hopefully support on-prem installations as well but that has not been
 verified.
 
 ```yaml
-scaffolder:
+integrations:
   azure:
-    baseUrl: https://dev.azure.com/{your-organization}
-    api:
-      token:
-        $env: AZURE_TOKEN
+    - host: dev.azure.com
+      token: ${AZURE_TOKEN}
 ```
 
 ### Running the Backend
@@ -238,3 +253,15 @@ GITHUB_TOKEN=<token> yarn start
 
 If you've also set up the frontend plugin, so you should be ready to go browse
 the templates at [localhost:3000/create](http://localhost:3000/create) now!
+
+### Disabling Docker in Docker situation (Optional)
+
+Software Templates use
+[Cookiecutter](https://github.com/cookiecutter/cookiecutter) as templating
+library. By default it will use the
+[spotify/backstage-cookiecutter](https://github.com/backstage/backstage/blob/37e35b910afc7d1270855aed0ec4718aba366c91/plugins/scaffolder-backend/scripts/Cookiecutter.dockerfile)
+docker image.
+
+If you are running backstage from a Docker container and you want to avoid
+calling a container inside a container, you can set up Cookiecutter in your own
+image, this will use the local installation instead.

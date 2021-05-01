@@ -14,7 +14,103 @@
  * limitations under the License.
  */
 
+import { ApiEntity, Entity } from '@backstage/catalog-model';
+import { Content, Header, Page } from '@backstage/core';
 import { createDevApp } from '@backstage/dev-utils';
-import { plugin } from '../src/plugin';
+import { catalogApiRef, EntityProvider } from '@backstage/plugin-catalog-react';
+import React from 'react';
+import {
+  apiDocsConfigRef,
+  ApiExplorerPage,
+  defaultDefinitionWidgets,
+  EntityApiDefinitionCard,
+} from '../src';
+import asyncapiApiEntity from './asyncapi-example-api.yaml';
+import graphqlApiEntity from './graphql-example-api.yaml';
+import openapiApiEntity from './openapi-example-api.yaml';
+import otherApiEntity from './other-example-api.yaml';
 
-createDevApp().registerPlugin(plugin).render();
+createDevApp()
+  .registerApi({
+    api: catalogApiRef,
+    deps: {},
+    factory: () =>
+      (({
+        async getEntities() {
+          return {
+            items: [
+              openapiApiEntity,
+              asyncapiApiEntity,
+              graphqlApiEntity,
+              otherApiEntity,
+            ],
+          };
+        },
+      } as unknown) as typeof catalogApiRef.T),
+  })
+  .registerApi({
+    api: apiDocsConfigRef,
+    deps: {},
+    factory: () => {
+      const definitionWidgets = defaultDefinitionWidgets();
+      return {
+        getApiDefinitionWidget: (apiEntity: ApiEntity) => {
+          return definitionWidgets.find(d => d.type === apiEntity.spec.type);
+        },
+      };
+    },
+  })
+  .addPage({ title: 'API Explorer', element: <ApiExplorerPage /> })
+  .addPage({
+    title: 'OpenAPI',
+    element: (
+      <Page themeId="home">
+        <Header title="OpenAPI" />
+        <Content>
+          <EntityProvider entity={(openapiApiEntity as any) as Entity}>
+            <EntityApiDefinitionCard />
+          </EntityProvider>
+        </Content>
+      </Page>
+    ),
+  })
+  .addPage({
+    title: 'AsyncAPI',
+    element: (
+      <Page themeId="home">
+        <Header title="AsyncAPI" />
+        <Content>
+          <EntityProvider entity={(asyncapiApiEntity as any) as Entity}>
+            <EntityApiDefinitionCard />
+          </EntityProvider>
+        </Content>
+      </Page>
+    ),
+  })
+  .addPage({
+    title: 'GraphQL',
+    element: (
+      <Page themeId="home">
+        <Header title="GraphQL" />
+        <Content>
+          <EntityProvider entity={(graphqlApiEntity as any) as Entity}>
+            <EntityApiDefinitionCard />
+          </EntityProvider>
+        </Content>
+      </Page>
+    ),
+  })
+  .addPage({
+    title: 'Other',
+    element: (
+      <Page themeId="home">
+        <Header title="Other" />
+        <Content>
+          <EntityProvider entity={(otherApiEntity as any) as Entity}>
+            <EntityApiDefinitionCard />
+          </EntityProvider>
+        </Content>
+      </Page>
+    ),
+  })
+  .render();

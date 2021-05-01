@@ -15,14 +15,16 @@
  */
 
 export * from './addBaseUrl';
+export * from './addGitFeedbackLink';
 export * from './rewriteDocLinks';
 export * from './addLinkClickListener';
 export * from './removeMkdocsHeader';
 export * from './simplifyMkdocsFooter';
-export * from './modifyCss';
 export * from './onCssReady';
 export * from './sanitizeDOM';
 export * from './injectCss';
+
+// TODO(freben): move all of this out of index
 
 export type Transformer = (dom: Element) => Element;
 
